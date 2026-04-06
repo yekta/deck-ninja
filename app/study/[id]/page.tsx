@@ -21,7 +21,7 @@ interface Flashcard {
   back: string;
   interval: number;
   repetition: number;
-  easeFactor: number;
+  ease_factor: number;
   next_review_date: string;
 }
 
@@ -43,7 +43,10 @@ export default function StudyPage() {
         .select("name")
         .eq("id", id)
         .single();
-      if (error || !data) { router.push("/"); return "Deck not found"; }
+      if (error || !data) {
+        router.push("/");
+        return "Deck not found";
+      }
       return data.name as string;
     },
     enabled: !!user && !!id,
@@ -68,7 +71,8 @@ export default function StudyPage() {
         .eq("deck_id", id)
         .lte("next_review_date", now);
 
-      if (countError) await handleDbError(countError, OperationType.GET, "cards");
+      if (countError)
+        await handleDbError(countError, OperationType.GET, "cards");
       if (error) await handleDbError(error, OperationType.GET, "cards");
 
       const shuffled = [...(data ?? [])].sort(() => Math.random() - 0.5);
@@ -93,7 +97,7 @@ export default function StudyPage() {
         quality,
         currentCard.repetition,
         currentCard.interval,
-        currentCard.easeFactor,
+        currentCard.ease_factor,
       );
 
       const nextDate = addDays(new Date(), interval);
@@ -108,7 +112,12 @@ export default function StudyPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentCard.id);
-      if (error) await handleDbError(error, OperationType.UPDATE, `cards/${currentCard.id}`);
+      if (error)
+        await handleDbError(
+          error,
+          OperationType.UPDATE,
+          `cards/${currentCard.id}`,
+        );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
