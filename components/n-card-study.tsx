@@ -175,7 +175,7 @@ export function NCardStudy({
   return (
     <div
       className="w-full"
-      style={{ perspective: "1200px", cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab" }}
+      style={{ perspective: "1200px", cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab", touchAction: "pan-y" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
