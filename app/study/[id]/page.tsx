@@ -139,6 +139,15 @@ export default function StudyPage() {
   const isFinished = currentIndex >= dueCards.length;
   const currentCard = dueCards[currentIndex];
 
+  const previewIntervals = currentCard
+    ? {
+        again: calculateSM2(1, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
+        hard: calculateSM2(3, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
+        good: calculateSM2(4, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
+        easy: calculateSM2(5, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
+      }
+    : null;
+
   useEffect(() => {
     if (isFinished && dueCards.length > 0) {
       confetti({
@@ -279,7 +288,7 @@ export default function StudyPage() {
                     disabled={rateCardMutation.isPending}
                   >
                     <span className="font-bold">Again</span>
-                    <span className="text-xs opacity-70">&lt; 1m</span>
+                    <span className="text-xs opacity-70">{previewIntervals!.again}d</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -292,11 +301,7 @@ export default function StudyPage() {
                     disabled={rateCardMutation.isPending}
                   >
                     <span className="font-bold">Hard</span>
-                    <span className="text-xs opacity-70">
-                      {currentCard.interval === 0
-                        ? "1d"
-                        : `${Math.round(currentCard.interval * 1.2)}d`}
-                    </span>
+                    <span className="text-xs opacity-70">{previewIntervals!.hard}d</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -309,11 +314,7 @@ export default function StudyPage() {
                     disabled={rateCardMutation.isPending}
                   >
                     <span className="font-bold">Good</span>
-                    <span className="text-xs opacity-70">
-                      {currentCard.interval === 0
-                        ? "1d"
-                        : `${Math.round(currentCard.interval * 2.5)}d`}
-                    </span>
+                    <span className="text-xs opacity-70">{previewIntervals!.good}d</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -326,11 +327,7 @@ export default function StudyPage() {
                     disabled={rateCardMutation.isPending}
                   >
                     <span className="font-bold">Easy</span>
-                    <span className="text-xs opacity-70">
-                      {currentCard.interval === 0
-                        ? "4d"
-                        : `${Math.round(currentCard.interval * 2.5 * 1.3)}d`}
-                    </span>
+                    <span className="text-xs opacity-70">{previewIntervals!.easy}d</span>
                   </Button>
                 </div>
               )}
