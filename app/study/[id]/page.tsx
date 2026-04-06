@@ -140,10 +140,30 @@ export default function StudyPage() {
 
   const previewIntervals = currentCard
     ? {
-        again: calculateSM2(1, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
-        hard: calculateSM2(3, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
-        good: calculateSM2(4, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
-        easy: calculateSM2(5, currentCard.repetition, currentCard.interval, currentCard.ease_factor).interval,
+        again: calculateSM2(
+          1,
+          currentCard.repetition,
+          currentCard.interval,
+          currentCard.ease_factor,
+        ).interval,
+        hard: calculateSM2(
+          3,
+          currentCard.repetition,
+          currentCard.interval,
+          currentCard.ease_factor,
+        ).interval,
+        good: calculateSM2(
+          4,
+          currentCard.repetition,
+          currentCard.interval,
+          currentCard.ease_factor,
+        ).interval,
+        easy: calculateSM2(
+          5,
+          currentCard.repetition,
+          currentCard.interval,
+          currentCard.ease_factor,
+        ).interval,
       }
     : null;
 
@@ -169,7 +189,6 @@ export default function StudyPage() {
             </div>
           }
         />
-
         <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full overflow-hidden">
           <div className="w-full space-y-8">
             <Card className="min-h-[300px] flex flex-col">
@@ -177,15 +196,6 @@ export default function StudyPage() {
                 <div className="text-2xl font-medium text-transparent bg-slate-200 animate-pulse rounded mb-8 w-3/4 h-8"></div>
               </CardContent>
             </Card>
-
-            <div className="flex justify-center">
-              <Button
-                size="lg"
-                className="w-full max-w-sm text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
-              >
-                &nbsp;
-              </Button>
-            </div>
           </div>
         </main>
       </div>
@@ -255,7 +265,12 @@ export default function StudyPage() {
             onRate={handleRate}
             ratingPending={rateCardMutation.isPending}
             pendingQuality={
-              (rateCardMutation.variables?.quality as 1 | 3 | 4 | 5 | undefined) ?? null
+              (rateCardMutation.variables?.quality as
+                | 1
+                | 3
+                | 4
+                | 5
+                | undefined) ?? null
             }
             hardLabel={`${previewIntervals!.hard}d`}
             goodLabel={`${previewIntervals!.good}d`}

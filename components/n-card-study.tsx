@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
-import { motion, useMotionValue, animate } from "motion/react";
+import { motion, useMotionValue, useTransform, animate } from "motion/react";
 
 type RatingQuality = 1 | 3 | 4 | 5;
 
@@ -47,6 +47,8 @@ export function NCardStudy({
 
   // The canonical Y rotation angle (0 = front, ±180 = back)
   const rotateY = useMotionValue(0);
+  const frontOpacity = useTransform(rotateY, (v) => Math.abs(v) < 90 ? 1 : 0);
+  const backOpacity = useTransform(rotateY, (v) => Math.abs(v) >= 90 ? 1 : 0);
   const baseAngle = useRef(0); // 0 or ±180 — updated on flip commit
   const dragStartX = useRef(0);
   const pointerDown = useRef(false);
@@ -128,7 +130,10 @@ export function NCardStudy({
       <Button
         variant="outline"
         className="h-auto py-3 flex flex-col gap-0.5 border-red-200 hover:bg-red-50 hover:text-red-700"
-        onClick={(e) => { e.stopPropagation(); onRate(1); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(1);
+        }}
         isLoading={ratingPending && pendingQuality === 1}
         disabled={ratingPending}
       >
@@ -138,7 +143,10 @@ export function NCardStudy({
       <Button
         variant="outline"
         className="h-auto py-3 flex flex-col gap-0.5 border-orange-200 hover:bg-orange-50 hover:text-orange-700"
-        onClick={(e) => { e.stopPropagation(); onRate(3); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(3);
+        }}
         isLoading={ratingPending && pendingQuality === 3}
         disabled={ratingPending}
       >
@@ -148,7 +156,10 @@ export function NCardStudy({
       <Button
         variant="outline"
         className="h-auto py-3 flex flex-col gap-0.5 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-        onClick={(e) => { e.stopPropagation(); onRate(4); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(4);
+        }}
         isLoading={ratingPending && pendingQuality === 4}
         disabled={ratingPending}
       >
@@ -158,7 +169,10 @@ export function NCardStudy({
       <Button
         variant="outline"
         className="h-auto py-3 flex flex-col gap-0.5 border-green-200 hover:bg-green-50 hover:text-green-700"
-        onClick={(e) => { e.stopPropagation(); onRate(5); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(5);
+        }}
         isLoading={ratingPending && pendingQuality === 5}
         disabled={ratingPending}
       >
@@ -169,13 +183,16 @@ export function NCardStudy({
   );
 
   /* ─── Shared face structure ─── */
-  const faceBase =
-    "flex flex-col p-8 rounded-2xl select-none";
+  const faceBase = "flex flex-col p-8 rounded-2xl select-none";
 
   return (
     <div
       className="w-full"
-      style={{ perspective: "1200px", cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab", touchAction: "pan-y" }}
+      style={{
+        perspective: "1200px",
+        cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab",
+        touchAction: "pan-y",
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -186,8 +203,8 @@ export function NCardStudy({
         className="relative w-full"
       >
         {/* ─── Front face ─── */}
-        <div
-          style={{ backfaceVisibility: "hidden" }}
+        <motion.div
+          style={{ backfaceVisibility: "hidden", opacity: frontOpacity }}
           className={cn(
             faceBase,
             "border border-amber-200/60 bg-[#FEFDF8] shadow-lg overflow-hidden",
@@ -211,21 +228,21 @@ export function NCardStudy({
               {front}
             </p>
           </div>
-          <p className="text-xs text-slate-400 text-center mt-1 mb-0 relative z-10 select-none">
-            Tap or drag to flip
-          </p>
-
           {/* Invisible buttons — keep layout identical to back face */}
           {ratingButtons(false)}
-        </div>
+          <p className="text-xs text-slate-400 text-center relative z-10 select-none">
+            Tap or drag to flip
+          </p>
+        </motion.div>
 
         {/* ─── Back face ─── */}
-        <div
+        <motion.div
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
             position: "absolute",
             inset: 0,
+            opacity: backOpacity,
           }}
           className={cn(faceBase, "border border-slate-200 bg-white shadow-lg")}
         >
@@ -244,7 +261,7 @@ export function NCardStudy({
 
           {/* Visible rating buttons */}
           {ratingButtons(true)}
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
