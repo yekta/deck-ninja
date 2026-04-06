@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: decks
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, immutable) - The ID of the user who owns the deck
+    //   - name: string (required, max 100 chars) - The name of the deck
+    //   - description: string (optional, max 500 chars) - A brief description of the deck
+    //   - createdAt: timestamp (required, immutable) - When the deck was created
+    //   - updatedAt: timestamp (required) - When the deck was last updated
+    //
+    // Collection: cards
+    // Document ID: auto-generated
+    // Fields:
+    //   - deckId: string (required, immutable) - The ID of the deck this card belongs to
+    //   - userId: string (required, immutable) - The ID of the user who owns the card
+    //   - front: string (required, max 2000 chars) - The front side of the card
+    //   - back: string (required, max 2000 chars) - The back side of the card
+    //   - interval: number (required, >= 0) - The current interval in days
+    //   - repetition: number (required, >= 0) - The number of successful repetitions
+    //   - easeFactor: number (required, >= 1.3) - The ease factor for the SM-2 algorithm
+    //   - nextReviewDate: timestamp (required) - The next date this card should be reviewed
+    //   - createdAt: timestamp (required, immutable) - When the card was created
+    //   - updatedAt: timestamp (required) - When the card was last updated
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+    
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+    
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+    
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidDeck(data) {
+      return hasOnlyAllowedFields(['userId', 'name', 'description', 'createdAt', 'updatedAt']) &&
+             hasRequiredFields(['userId', 'name', 'createdAt', 'updatedAt']) &&
+             validStringLength('name', 1, 100) &&
+             isValidOptionalString('description', 0, 500) &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidCard(data) {
+      return hasOnlyAllowedFields(['deckId', 'userId', 'front', 'back', 'interval', 'repetition', 'easeFactor', 'nextReviewDate', 'createdAt', 'updatedAt']) &&
+             hasRequiredFields(['deckId', 'userId', 'front', 'back', 'interval', 'repetition', 'easeFactor', 'nextReviewDate', 'createdAt', 'updatedAt']) &&
+             validStringLength('deckId', 1, 100) &&
+             validStringLength('front', 1, 2000) &&
+             validStringLength('back', 1, 2000) &&
+             request.resource.data.interval is number && request.resource.data.interval >= 0 &&
+             request.resource.data.repetition is number && request.resource.data.repetition >= 0 &&
+             request.resource.data.easeFactor is number && request.resource.data.easeFactor >= 1.3 &&
+             request.resource.data.nextReviewDate is timestamp &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    match /decks/{deckId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && 
+                       isValidDeck(request.resource.data) && 
+                       uidUnchanged();
+      allow update: if isDocOwner() && 
+                       isValidDeck(request.resource.data) && 
+                       uidNotModified() &&
+                       areImmutableFieldsUnchanged(['userId', 'createdAt']);
+      allow delete: if isDocOwner();
+    }
+
+    match /cards/{cardId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && 
+                       isValidCard(request.resource.data) && 
+                       uidUnchanged();
+      allow update: if isDocOwner() && 
+                       isValidCard(request.resource.data) && 
+                       uidNotModified() &&
+                       areImmutableFieldsUnchanged(['userId', 'deckId', 'createdAt']);
+      allow delete: if isDocOwner();
+    }
+  }
+}

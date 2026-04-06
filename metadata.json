@@ -1,0 +1,5 @@
+{
+  "name": "DeckNinja",
+  "description": "A flashcard app using spaced repetition algorithm with Firebase authentication.",
+  "requestFramePermissions": []
+}

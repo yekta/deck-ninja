@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Deck": {
+      "title": "Deck",
+      "description": "A collection of flashcards",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns the deck" },
+        "name": { "type": "string", "description": "The name of the deck" },
+        "description": { "type": "string", "description": "A brief description of the deck" },
+        "createdAt": { "type": "timestamp", "description": "When the deck was created" },
+        "updatedAt": { "type": "timestamp", "description": "When the deck was last updated" }
+      },
+      "required": ["userId", "name", "createdAt", "updatedAt"]
+    },
+    "Card": {
+      "title": "Card",
+      "description": "A single flashcard",
+      "type": "object",
+      "properties": {
+        "deckId": { "type": "string", "description": "The ID of the deck this card belongs to" },
+        "userId": { "type": "string", "description": "The ID of the user who owns the card" },
+        "front": { "type": "string", "description": "The front side of the card (question)" },
+        "back": { "type": "string", "description": "The back side of the card (answer)" },
+        "interval": { "type": "number", "description": "The current interval in days" },
+        "repetition": { "type": "number", "description": "The number of successful repetitions" },
+        "easeFactor": { "type": "number", "description": "The ease factor for the SM-2 algorithm" },
+        "nextReviewDate": { "type": "timestamp", "description": "The next date this card should be reviewed" },
+        "createdAt": { "type": "timestamp", "description": "When the card was created" },
+        "updatedAt": { "type": "timestamp", "description": "When the card was last updated" }
+      },
+      "required": ["deckId", "userId", "front", "back", "interval", "repetition", "easeFactor", "nextReviewDate", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/decks/{deckId}": {
+      "schema": { "$ref": "#/entities/Deck" },
+      "description": "Decks collection"
+    },
+    "/cards/{cardId}": {
+      "schema": { "$ref": "#/entities/Card" },
+      "description": "Cards collection"
+    }
+  }
+}
