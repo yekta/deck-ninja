@@ -47,8 +47,8 @@ export function NCardStudy({
 
   // The canonical Y rotation angle (0 = front, ±180 = back)
   const rotateY = useMotionValue(0);
-  const frontOpacity = useTransform(rotateY, (v) => Math.abs(v) < 90 ? 1 : 0);
-  const backOpacity = useTransform(rotateY, (v) => Math.abs(v) >= 90 ? 1 : 0);
+  const frontOpacity = useTransform(rotateY, (v) => (Math.abs(v) < 90 ? 1 : 0));
+  const backOpacity = useTransform(rotateY, (v) => (Math.abs(v) >= 90 ? 1 : 0));
   const baseAngle = useRef(0); // 0 or ±180 — updated on flip commit
   const dragStartX = useRef(0);
   const pointerDown = useRef(false);
@@ -119,69 +119,6 @@ export function NCardStudy({
     springTo(baseAngle.current);
   };
 
-  /* ─── Shared button row (rendered in both faces) ─── */
-  const ratingButtons = (visible: boolean) => (
-    <div
-      className={cn(
-        "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 transition-opacity duration-150",
-        visible ? "opacity-100" : "opacity-0 pointer-events-none",
-      )}
-    >
-      <Button
-        variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 border-red-200 hover:bg-red-50 hover:text-red-700"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRate(1);
-        }}
-        isLoading={ratingPending && pendingQuality === 1}
-        disabled={ratingPending}
-      >
-        <span className="font-bold text-sm">Again</span>
-        <span className="text-xs opacity-70">&lt; 1m</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 border-orange-200 hover:bg-orange-50 hover:text-orange-700"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRate(3);
-        }}
-        isLoading={ratingPending && pendingQuality === 3}
-        disabled={ratingPending}
-      >
-        <span className="font-bold text-sm">Hard</span>
-        <span className="text-xs opacity-70">{hardLabel}</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRate(4);
-        }}
-        isLoading={ratingPending && pendingQuality === 4}
-        disabled={ratingPending}
-      >
-        <span className="font-bold text-sm">Good</span>
-        <span className="text-xs opacity-70">{goodLabel}</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 border-green-200 hover:bg-green-50 hover:text-green-700"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRate(5);
-        }}
-        isLoading={ratingPending && pendingQuality === 5}
-        disabled={ratingPending}
-      >
-        <span className="font-bold text-sm">Easy</span>
-        <span className="text-xs opacity-70">{easyLabel}</span>
-      </Button>
-    </div>
-  );
-
   /* ─── Shared face structure ─── */
   const faceBase = "flex flex-col p-8 rounded-2xl select-none";
 
@@ -229,7 +166,17 @@ export function NCardStudy({
             </p>
           </div>
           {/* Invisible buttons — keep layout identical to back face */}
-          {ratingButtons(false)}
+          <RatingButtons
+            visible={false}
+            back={back}
+            front={front}
+            ratingPending={ratingPending}
+            pendingQuality={pendingQuality}
+            onRate={onRate}
+            hardLabel={hardLabel}
+            goodLabel={goodLabel}
+            easyLabel={easyLabel}
+          />
           <p className="text-xs text-slate-400 text-center relative z-10 select-none">
             Tap or drag to flip
           </p>
@@ -258,11 +205,92 @@ export function NCardStudy({
           <p className="text-xs text-center mt-1 mb-0 opacity-0 select-none">
             placeholder
           </p>
-
           {/* Visible rating buttons */}
-          {ratingButtons(true)}
+          <RatingButtons
+            visible={true}
+            back={back}
+            front={front}
+            ratingPending={ratingPending}
+            pendingQuality={pendingQuality}
+            onRate={onRate}
+            hardLabel={hardLabel}
+            goodLabel={goodLabel}
+            easyLabel={easyLabel}
+          />
         </motion.div>
       </motion.div>
+    </div>
+  );
+}
+
+function RatingButtons({
+  visible,
+  ratingPending,
+  pendingQuality,
+  onRate,
+  hardLabel,
+  goodLabel,
+  easyLabel,
+}: { visible: boolean } & NCardStudyProps) {
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 transition-opacity duration-150",
+        visible ? "opacity-100" : "opacity-0 pointer-events-none",
+      )}
+    >
+      <Button
+        variant="outline"
+        className="h-auto py-3 flex flex-col gap-0.5 bg-red-50 border-red-200 hover:bg-red-100 hover:text-red-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(1);
+        }}
+        isLoading={ratingPending && pendingQuality === 1}
+        disabled={ratingPending}
+      >
+        <span className="font-bold text-sm">Again</span>
+        <span className="text-xs opacity-70">&lt; 1m</span>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-auto py-3 flex flex-col gap-0.5 bg-orange-50 border-orange-200 hover:bg-orange-100 hover:text-orange-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(3);
+        }}
+        isLoading={ratingPending && pendingQuality === 3}
+        disabled={ratingPending}
+      >
+        <span className="font-bold text-sm">Hard</span>
+        <span className="text-xs opacity-70">{hardLabel}</span>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-auto py-3 flex flex-col gap-0.5 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(4);
+        }}
+        isLoading={ratingPending && pendingQuality === 4}
+        disabled={ratingPending}
+      >
+        <span className="font-bold text-sm">Good</span>
+        <span className="text-xs opacity-70">{goodLabel}</span>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-auto py-3 flex flex-col gap-0.5 bg-green-50 border-green-200 hover:bg-green-100 hover:text-green-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRate(5);
+        }}
+        isLoading={ratingPending && pendingQuality === 5}
+        disabled={ratingPending}
+      >
+        <span className="font-bold text-sm">Easy</span>
+        <span className="text-xs opacity-70">{easyLabel}</span>
+      </Button>
     </div>
   );
 }
