@@ -134,7 +134,7 @@ export function NCardStudy(props: NCardStudyProps) {
       data-placeholder={isPlaceholder ? "true" : undefined}
       className="w-full group"
       style={{
-        perspective: "1200px",
+        perspective: "1400px",
         cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab",
         touchAction: "pan-y",
       }}
