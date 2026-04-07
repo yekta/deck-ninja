@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
 import {
-  scheduler,
+  createUserScheduler,
   dbRowToFSRSCard,
   fsrsCardToDbRow,
+  reviewLogToDbRow,
   formatInterval,
   Rating,
   type Grade,
@@ -19,7 +20,7 @@ import confetti from "canvas-confetti";
 import { BrainCircuit, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Flashcard {
   id: string;
@@ -44,6 +45,26 @@ export default function StudyPage() {
   const queryClient = useQueryClient();
 
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const { data: userSettings } = useQuery({
+    queryKey: ["userSettings", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const userScheduler = useMemo(
+    () => createUserScheduler(userSettings ?? null),
+    [userSettings],
+  );
 
   const { data: deckName = "Loading...", isPending: isPendingDecks } = useQuery(
     {
@@ -108,21 +129,32 @@ export default function StudyPage() {
     }) => {
       const fsrsCard = dbRowToFSRSCard(currentCard);
       const now = new Date();
-      const result = scheduler.next(fsrsCard, now, rating);
+      const result = userScheduler.next(fsrsCard, now, rating);
       const dbFields = fsrsCardToDbRow(result.card);
 
-      const { error } = await supabase
-        .from("cards")
-        .update({
-          ...dbFields,
-          updated_at: now.toISOString(),
-        })
-        .eq("id", currentCard.id);
-      if (error)
+      const [cardResult, logResult] = await Promise.all([
+        supabase
+          .from("cards")
+          .update({
+            ...dbFields,
+            updated_at: now.toISOString(),
+          })
+          .eq("id", currentCard.id),
+        supabase
+          .from("review_logs")
+          .insert(reviewLogToDbRow(result.log, currentCard.id)),
+      ]);
+      if (cardResult.error)
         await handleDbError(
-          error,
+          cardResult.error,
           OperationType.UPDATE,
           `cards/${currentCard.id}`,
+        );
+      if (logResult.error)
+        await handleDbError(
+          logResult.error,
+          OperationType.CREATE,
+          "review_logs",
         );
     },
     onSuccess: () => {
@@ -148,7 +180,7 @@ export default function StudyPage() {
     ? (() => {
         const fsrsCard = dbRowToFSRSCard(currentCard);
         const now = new Date();
-        const preview = scheduler.repeat(fsrsCard, now);
+        const preview = userScheduler.repeat(fsrsCard, now);
         return {
           againLabel: formatInterval(preview[Rating.Again].card.due, now),
           hardLabel: formatInterval(preview[Rating.Hard].card.due, now),

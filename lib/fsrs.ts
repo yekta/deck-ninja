@@ -5,12 +5,47 @@ import {
   State,
   type Card as FSRSCard,
   type Grade,
+  type FSRS,
+  type ReviewLog as FSRSReviewLog,
 } from "ts-fsrs";
 
 export { Rating, State, createEmptyCard };
-export type { FSRSCard, Grade };
+export type { FSRSCard, Grade, FSRS };
 
 export const scheduler = fsrs();
+
+export function createUserScheduler(
+  settings: {
+    request_retention?: number;
+    maximum_interval?: number;
+    w?: number[] | null;
+    enable_fuzz?: boolean;
+    enable_short_term?: boolean;
+  } | null,
+): FSRS {
+  if (!settings) return fsrs();
+  return fsrs({
+    request_retention: settings.request_retention ?? 0.9,
+    maximum_interval: settings.maximum_interval ?? 36500,
+    w: settings.w ?? undefined,
+    enable_fuzz: settings.enable_fuzz ?? true,
+    enable_short_term: settings.enable_short_term ?? true,
+  });
+}
+
+export function reviewLogToDbRow(log: FSRSReviewLog, cardId: string) {
+  return {
+    card_id: cardId,
+    rating: log.rating as number,
+    state: stateToEnum[log.state] ?? "new",
+    due: new Date(log.due).toISOString(),
+    stability: log.stability,
+    difficulty: log.difficulty,
+    scheduled_days: log.scheduled_days,
+    learning_steps: log.learning_steps,
+    review: new Date(log.review).toISOString(),
+  };
+}
 
 const stateToEnum: Record<State, string> = {
   [State.New]: "new",

@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775510745236,
-      "tag": "0000_spooky_leo",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775600000000,
-      "tag": "0001_sm2_to_fsrs",
+      "when": 1775600422765,
+      "tag": "0000_eager_sinister_six",
       "breakpoints": true
     }
   ]

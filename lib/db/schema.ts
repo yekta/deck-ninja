@@ -6,6 +6,7 @@ import {
   timestamp,
   real,
   integer,
+  boolean,
   index,
   pgSchema,
 } from "drizzle-orm/pg-core";
@@ -94,5 +95,48 @@ export const cards = pgTable(
   ],
 );
 
+export const userSettings = pgTable("user_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  requestRetention: real("request_retention").notNull().default(0.9),
+  maximumInterval: integer("maximum_interval").notNull().default(36500),
+  w: real("w").array(),
+  enableFuzz: boolean("enable_fuzz").notNull().default(true),
+  enableShortTerm: boolean("enable_short_term").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const reviewLogs = pgTable(
+  "review_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    state: cardStateEnum("state").notNull(),
+    due: timestamp("due", { withTimezone: true }).notNull(),
+    stability: real("stability").notNull(),
+    difficulty: real("difficulty").notNull(),
+    scheduledDays: integer("scheduled_days").notNull(),
+    learningSteps: integer("learning_steps").notNull(),
+    review: timestamp("review", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("review_logs_card_id_review_idx").on(t.cardId, t.review)],
+);
+
 export type Deck = typeof decks.$inferSelect;
 export type Card = typeof cards.$inferSelect;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type ReviewLog = typeof reviewLogs.$inferSelect;
