@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   text,
   uuid,
   timestamp,
@@ -8,6 +9,13 @@ import {
   index,
   pgSchema,
 } from "drizzle-orm/pg-core";
+
+export const cardStateEnum = pgEnum("card_state", [
+  "new",
+  "learning",
+  "review",
+  "relearning",
+]);
 
 const authSchema = pgSchema("auth");
 const authUsers = authSchema.table("users", {
@@ -60,12 +68,16 @@ export const cards = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     front: text("front").notNull(),
     back: text("back").notNull(),
-    interval: integer("interval").notNull().default(0),
-    repetition: integer("repetition").notNull().default(0),
-    easeFactor: real("ease_factor").notNull().default(2.5),
-    nextReviewDate: timestamp("next_review_date", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    due: timestamp("due", { withTimezone: true }).notNull().defaultNow(),
+    stability: real("stability").notNull().default(0),
+    difficulty: real("difficulty").notNull().default(0),
+    elapsedDays: integer("elapsed_days").notNull().default(0),
+    scheduledDays: integer("scheduled_days").notNull().default(0),
+    reps: integer("reps").notNull().default(0),
+    lapses: integer("lapses").notNull().default(0),
+    state: cardStateEnum("state").notNull().default("new"),
+    learningSteps: integer("learning_steps").notNull().default(0),
+    lastReview: timestamp("last_review", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -74,10 +86,10 @@ export const cards = pgTable(
       .defaultNow(),
   },
   (t) => [
-    index("cards_deck_id_user_id_next_review_idx").on(
+    index("cards_deck_id_user_id_due_idx").on(
       t.deckId,
       t.userId,
-      t.nextReviewDate,
+      t.due,
     ),
   ],
 );

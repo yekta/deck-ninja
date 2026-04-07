@@ -6,10 +6,16 @@ import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
-import { calculateSM2 } from "@/lib/sm2";
+import {
+  scheduler,
+  dbRowToFSRSCard,
+  fsrsCardToDbRow,
+  formatInterval,
+  Rating,
+  type Grade,
+} from "@/lib/fsrs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
-import { addDays } from "date-fns";
 import { BrainCircuit, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -19,10 +25,16 @@ interface Flashcard {
   id: string;
   front: string;
   back: string;
-  interval: number;
-  repetition: number;
-  ease_factor: number;
-  next_review_date: string;
+  due: string;
+  stability: number;
+  difficulty: number;
+  elapsed_days: number;
+  scheduled_days: number;
+  reps: number;
+  lapses: number;
+  state: string;
+  learning_steps: number;
+  last_review: string | null;
 }
 
 export default function StudyPage() {
@@ -70,7 +82,7 @@ export default function StudyPage() {
         .from("cards")
         .select("*")
         .eq("deck_id", id)
-        .lte("next_review_date", now);
+        .lte("due", now);
 
       if (countError)
         await handleDbError(countError, OperationType.GET, "cards");
@@ -88,29 +100,22 @@ export default function StudyPage() {
 
   const rateCardMutation = useMutation({
     mutationFn: async ({
-      quality,
+      rating,
       currentCard,
     }: {
-      quality: number;
+      rating: Grade;
       currentCard: Flashcard;
     }) => {
-      const { interval, repetition, easeFactor } = calculateSM2(
-        quality,
-        currentCard.repetition,
-        currentCard.interval,
-        currentCard.ease_factor,
-      );
-
-      const nextDate = addDays(new Date(), interval);
+      const fsrsCard = dbRowToFSRSCard(currentCard);
+      const now = new Date();
+      const result = scheduler.next(fsrsCard, now, rating);
+      const dbFields = fsrsCardToDbRow(result.card);
 
       const { error } = await supabase
         .from("cards")
         .update({
-          interval,
-          repetition,
-          ease_factor: easeFactor,
-          next_review_date: nextDate.toISOString(),
-          updated_at: new Date().toISOString(),
+          ...dbFields,
+          updated_at: now.toISOString(),
         })
         .eq("id", currentCard.id);
       if (error)
@@ -130,42 +135,27 @@ export default function StudyPage() {
     },
   });
 
-  const handleRate = (quality: number) => {
+  const handleRate = (rating: Grade) => {
     if (!user) return;
     const currentCard = dueCards[currentIndex];
-    rateCardMutation.mutate({ quality, currentCard });
+    rateCardMutation.mutate({ rating, currentCard });
   };
 
   const isFinished = currentIndex >= dueCards.length;
   const currentCard = dueCards[currentIndex];
 
-  const previewIntervals = currentCard
-    ? {
-        again: calculateSM2(
-          1,
-          currentCard.repetition,
-          currentCard.interval,
-          currentCard.ease_factor,
-        ).interval,
-        hard: calculateSM2(
-          3,
-          currentCard.repetition,
-          currentCard.interval,
-          currentCard.ease_factor,
-        ).interval,
-        good: calculateSM2(
-          4,
-          currentCard.repetition,
-          currentCard.interval,
-          currentCard.ease_factor,
-        ).interval,
-        easy: calculateSM2(
-          5,
-          currentCard.repetition,
-          currentCard.interval,
-          currentCard.ease_factor,
-        ).interval,
-      }
+  const previewLabels = currentCard
+    ? (() => {
+        const fsrsCard = dbRowToFSRSCard(currentCard);
+        const now = new Date();
+        const preview = scheduler.repeat(fsrsCard, now);
+        return {
+          againLabel: formatInterval(preview[Rating.Again].card.due, now),
+          hardLabel: formatInterval(preview[Rating.Hard].card.due, now),
+          goodLabel: formatInterval(preview[Rating.Good].card.due, now),
+          easyLabel: formatInterval(preview[Rating.Easy].card.due, now),
+        };
+      })()
     : null;
 
   useEffect(() => {
@@ -257,17 +247,11 @@ export default function StudyPage() {
             back={currentCard.back}
             onRate={handleRate}
             ratingPending={rateCardMutation.isPending}
-            pendingQuality={
-              (rateCardMutation.variables?.quality as
-                | 1
-                | 3
-                | 4
-                | 5
-                | undefined) ?? null
-            }
-            hardLabel={`${previewIntervals!.hard}d`}
-            goodLabel={`${previewIntervals!.good}d`}
-            easyLabel={`${previewIntervals!.easy}d`}
+            pendingRating={rateCardMutation.variables?.rating ?? null}
+            againLabel={previewLabels!.againLabel}
+            hardLabel={previewLabels!.hardLabel}
+            goodLabel={previewLabels!.goodLabel}
+            easyLabel={previewLabels!.easyLabel}
           />
         )}
       </main>

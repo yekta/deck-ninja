@@ -28,8 +28,6 @@ interface Flashcard {
   id: string;
   front: string;
   back: string;
-  next_review_date: string;
-  repetition: number;
 }
 
 export default function DeckPage() {
@@ -91,9 +89,6 @@ export default function DeckPage() {
         user_id: user.id,
         front: newFront.trim(),
         back: newBack.trim(),
-        interval: 0,
-        repetition: 0,
-        ease_factor: 2.5,
       });
       if (error) await handleDbError(error, OperationType.CREATE, "cards");
     },

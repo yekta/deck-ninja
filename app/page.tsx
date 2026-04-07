@@ -35,9 +35,8 @@ interface Deck {
 interface Flashcard {
   id: string;
   deck_id: string;
-  interval: number;
-  repetition: number;
-  next_review_date: string;
+  due: string;
+  state: string;
   created_at: string;
 }
 
@@ -194,9 +193,6 @@ export default function Home() {
         user_id: user.id,
         front: newCardFront.trim(),
         back: newCardBack.trim(),
-        interval: 0,
-        repetition: 0,
-        ease_factor: 2.5,
       });
       if (error) await handleDbError(error, OperationType.CREATE, "cards");
     },
@@ -223,18 +219,14 @@ export default function Home() {
     const deckCards = cards.filter((c) => c.deck_id === deckId);
     const now = new Date();
 
-    const newCards = deckCards.filter((c) => c.interval === 0).length;
+    const newCards = deckCards.filter((c) => c.state === "new").length;
     const learnCards = deckCards.filter(
       (c) =>
-        c.interval > 0 &&
-        c.repetition === 0 &&
-        new Date(c.next_review_date) <= now,
+        (c.state === "learning" || c.state === "relearning") &&
+        new Date(c.due) <= now,
     ).length;
     const dueCards = deckCards.filter(
-      (c) =>
-        c.interval > 0 &&
-        c.repetition > 0 &&
-        new Date(c.next_review_date) <= now,
+      (c) => c.state === "review" && new Date(c.due) <= now,
     ).length;
 
     const latestCardCreatedAt = deckCards.reduce((latest, card) => {

@@ -2,10 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Rating, type Grade } from "ts-fsrs";
 import { useState, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
-
-type RatingQuality = 1 | 3 | 4 | 5;
 
 type NCardStudyProps =
   | { isPlaceholder: true }
@@ -13,9 +12,10 @@ type NCardStudyProps =
       isPlaceholder?: never;
       front: string;
       back: string;
-      onRate: (quality: RatingQuality) => void;
+      onRate: (rating: Grade) => void;
       ratingPending: boolean;
-      pendingQuality: RatingQuality | null;
+      pendingRating: Grade | null;
+      againLabel: string;
       hardLabel: string;
       goodLabel: string;
       easyLabel: string;
@@ -39,10 +39,11 @@ const placeholderProps: Omit<RatingButtonsProps, "visible"> = {
   isPlaceholder: true,
   onRate: () => {},
   ratingPending: false,
-  pendingQuality: null,
-  easyLabel: "5d",
-  goodLabel: "3d",
+  pendingRating: null,
+  againLabel: "< 1m",
   hardLabel: "1d",
+  goodLabel: "3d",
+  easyLabel: "5d",
 };
 
 export function NCardStudy(props: NCardStudyProps) {
@@ -213,8 +214,9 @@ type RatingButtonsProps = {
   isPlaceholder?: boolean;
   visible: boolean;
   ratingPending: boolean;
-  pendingQuality: RatingQuality | null;
-  onRate: (quality: RatingQuality) => void;
+  pendingRating: Grade | null;
+  onRate: (rating: Grade) => void;
+  againLabel: string;
   hardLabel: string;
   goodLabel: string;
   easyLabel: string;
@@ -223,8 +225,9 @@ type RatingButtonsProps = {
 function RatingButtons({
   visible,
   ratingPending,
-  pendingQuality,
+  pendingRating,
   onRate,
+  againLabel,
   hardLabel,
   goodLabel,
   easyLabel,
@@ -241,22 +244,22 @@ function RatingButtons({
         className="h-auto py-3 flex flex-col gap-0.5 bg-red-50 border-red-200 hover:bg-red-100 hover:text-red-700"
         onClick={(e) => {
           e.stopPropagation();
-          onRate(1);
+          onRate(Rating.Again);
         }}
-        isPending={ratingPending && pendingQuality === 1}
+        isPending={ratingPending && pendingRating === Rating.Again}
         disabled={ratingPending}
       >
         <span className="font-bold text-sm">Again</span>
-        <span className="text-xs opacity-70">&lt; 1m</span>
+        <span className="text-xs opacity-70">{againLabel}</span>
       </Button>
       <Button
         variant="outline"
         className="h-auto py-3 flex flex-col gap-0.5 bg-orange-50 border-orange-200 hover:bg-orange-100 hover:text-orange-700"
         onClick={(e) => {
           e.stopPropagation();
-          onRate(3);
+          onRate(Rating.Hard);
         }}
-        isPending={ratingPending && pendingQuality === 3}
+        isPending={ratingPending && pendingRating === Rating.Hard}
         disabled={ratingPending}
       >
         <span className="font-bold text-sm">Hard</span>
@@ -267,9 +270,9 @@ function RatingButtons({
         className="h-auto py-3 flex flex-col gap-0.5 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
         onClick={(e) => {
           e.stopPropagation();
-          onRate(4);
+          onRate(Rating.Good);
         }}
-        isPending={ratingPending && pendingQuality === 4}
+        isPending={ratingPending && pendingRating === Rating.Good}
         disabled={ratingPending}
       >
         <span className="font-bold text-sm">Good</span>
@@ -280,9 +283,9 @@ function RatingButtons({
         className="h-auto py-3 flex flex-col gap-0.5 bg-green-50 border-green-200 hover:bg-green-100 hover:text-green-700"
         onClick={(e) => {
           e.stopPropagation();
-          onRate(5);
+          onRate(Rating.Easy);
         }}
-        isPending={ratingPending && pendingQuality === 5}
+        isPending={ratingPending && pendingRating === Rating.Easy}
         disabled={ratingPending}
       >
         <span className="font-bold text-sm">Easy</span>
