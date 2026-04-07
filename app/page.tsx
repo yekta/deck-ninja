@@ -2,14 +2,6 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { NDeck } from "@/components/n-deck";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,8 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { BrainCircuit, Plus, LogOut, MoreVertical } from "lucide-react";
+import { BrainCircuit, Plus, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNow } from "@/components/now-provider";
@@ -267,90 +260,6 @@ export default function Home() {
     deleteDeckMutation.mutate();
   };
 
-  if (loading || (user && isPending)) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <Navbar />
-
-        <main className="max-w-5xl mx-auto p-6 space-y-8">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold tracking-tight text-transparent bg-slate-200 animate-pulse rounded w-48 max-w-full shrink">
-              &nbsp;
-            </h2>
-            <Button className="text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200 shrink-0">
-              <Plus className="h-4 w-4 mr-2 opacity-0" />
-              &nbsp;
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="flex flex-col">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 gap-4">
-                  <div className="space-y-2 w-full min-w-0">
-                    <CardTitle className="text-transparent bg-slate-200 animate-pulse rounded w-3/4 truncate">
-                      &nbsp;
-                    </CardTitle>
-                    <CardDescription className="text-transparent bg-slate-200 animate-pulse rounded w-full truncate">
-                      &nbsp;
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 bg-slate-200 animate-pulse pointer-events-none hover:bg-slate-200 shrink-0"
-                  >
-                    <MoreVertical className="h-4 w-4 opacity-0" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="flex-1 min-w-0">
-                  <div className="flex flex-col gap-3 mt-2">
-                    <div className="text-sm font-medium text-transparent bg-slate-200 animate-pulse rounded w-24">
-                      &nbsp;
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                      <div className="flex items-center gap-1.5 text-transparent bg-slate-200 animate-pulse rounded w-16">
-                        &nbsp;
-                      </div>
-                      <div className="flex items-center gap-1.5 text-transparent bg-slate-200 animate-pulse rounded w-16">
-                        &nbsp;
-                      </div>
-                      <div className="flex items-center gap-1.5 text-transparent bg-slate-200 animate-pulse rounded w-16">
-                        &nbsp;
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                  <Button
-                    variant="default"
-                    className="w-full text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
-                  >
-                    &nbsp;
-                  </Button>
-                  <div className="flex w-full gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
-                    >
-                      &nbsp;
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
-                    >
-                      &nbsp;
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   const handleSignIn = async () => {
     setIsSigningIn(true);
     try {
@@ -360,7 +269,7 @@ export default function Home() {
     }
   };
 
-  if (!user) {
+  if (!loading && !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
         <div className="max-w-md text-center space-y-6">
@@ -385,14 +294,22 @@ export default function Home() {
     );
   }
 
+  const showPlaceholder = loading || isPending;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
 
       <main className="max-w-5xl mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold tracking-tight truncate min-w-0">
-            Decks ({decks.length})
+          <h2
+            className={cn(
+              "text-2xl font-bold tracking-tight truncate min-w-0",
+              showPlaceholder &&
+                "text-transparent bg-slate-200 animate-pulse rounded w-48 select-none",
+            )}
+          >
+            {showPlaceholder ? "\u00a0" : `Decks (${decks.length})`}
           </h2>
 
           <Dialog
@@ -570,9 +487,19 @@ export default function Home() {
           </Dialog>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Deck
+            <DialogTrigger
+              render={
+                <Button
+                  className={cn(
+                    "shrink-0",
+                    showPlaceholder &&
+                      "text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200",
+                  )}
+                />
+              }
+            >
+              <Plus className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")} />
+              {showPlaceholder ? "\u00a0" : "Create Deck"}
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleCreateDeck}>
@@ -617,7 +544,13 @@ export default function Home() {
           </Dialog>
         </div>
 
-        {decks.length === 0 ? (
+        {showPlaceholder ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <NDeck key={i} isPlaceholder />
+            ))}
+          </div>
+        ) : decks.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-lg border border-dashed">
             <h3 className="text-lg font-medium text-slate-900 mb-2">
               No decks yet

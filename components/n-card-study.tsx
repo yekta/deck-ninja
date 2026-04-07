@@ -7,16 +7,19 @@ import { motion, useMotionValue, useTransform, animate } from "motion/react";
 
 type RatingQuality = 1 | 3 | 4 | 5;
 
-interface NCardStudyProps {
-  front: string;
-  back: string;
-  onRate: (quality: RatingQuality) => void;
-  ratingPending: boolean;
-  pendingQuality: RatingQuality | null;
-  hardLabel: string;
-  goodLabel: string;
-  easyLabel: string;
-}
+type NCardStudyProps =
+  | { isPlaceholder: true }
+  | {
+      isPlaceholder?: never;
+      front: string;
+      back: string;
+      onRate: (quality: RatingQuality) => void;
+      ratingPending: boolean;
+      pendingQuality: RatingQuality | null;
+      hardLabel: string;
+      goodLabel: string;
+      easyLabel: string;
+    };
 
 const FLIP_THRESHOLD = 72; // degrees past which we complete the flip
 const PX_PER_DEG = 150 / 180; // px of drag per degree of rotation (150px = full 180°)
@@ -32,16 +35,19 @@ function rubberBand(raw: number): number {
   return sign * (limit + excess / (1 + excess * k));
 }
 
-export function NCardStudy({
-  front,
-  back,
-  onRate,
-  ratingPending,
-  pendingQuality,
-  hardLabel,
-  goodLabel,
-  easyLabel,
-}: NCardStudyProps) {
+const placeholderProps: Omit<RatingButtonsProps, "visible"> = {
+  isPlaceholder: true,
+  onRate: () => {},
+  ratingPending: false,
+  pendingQuality: null,
+  easyLabel: "5d",
+  goodLabel: "3d",
+  hardLabel: "1d",
+};
+
+export function NCardStudy(props: NCardStudyProps) {
+  const { isPlaceholder } = props;
+
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [isBack, setIsBack] = useState(false);
 
@@ -66,6 +72,7 @@ export function NCardStudy({
   /* ─── Pointer handlers ─── */
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isPlaceholder) return;
     // Don't interfere with button clicks
     if ((e.target as HTMLElement).closest("button")) return;
     // Back face is locked — must use buttons to rate
@@ -124,7 +131,8 @@ export function NCardStudy({
 
   return (
     <div
-      className="w-full"
+      data-placeholder={isPlaceholder ? "true" : undefined}
+      className="w-full group"
       style={{
         perspective: "1200px",
         cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab",
@@ -144,84 +152,73 @@ export function NCardStudy({
           style={{ backfaceVisibility: "hidden", opacity: frontOpacity }}
           className={cn(
             faceBase,
-            "border border-amber-200/60 bg-[#FEFDF8] shadow-lg overflow-hidden",
+            "border border-amber-200/60 bg-[#FEFDF8] shadow-lg overflow-hidden flex flex-col items-center",
           )}
         >
-          {/* Ruled lines */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.06]"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(transparent, transparent 27px, #92400e 27px, #92400e 28px)",
-              backgroundPositionY: "32px",
-            }}
-          />
-
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-500/60 mb-5 text-center relative z-10">
+          <p className="max-w-full shrink min-w-0 text-xs font-semibold uppercase tracking-widest text-amber-500/60 mb-5 text-center relative z-10 group-data-placeholder:text-transparent group-data-placeholder:bg-amber-500/20 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
             Front
           </p>
           <div className="flex-1 flex items-center justify-center relative z-10 py-6 min-h-[120px]">
-            <p className="text-2xl font-medium text-slate-900 break-words text-center">
-              {front}
+            <p className="text-2xl font-medium text-slate-900 break-words text-center group-data-placeholder:text-transparent group-data-placeholder:bg-slate-900/15 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+              {isPlaceholder ? "Front text" : props.front}
             </p>
           </div>
           {/* Invisible buttons — keep layout identical to back face */}
           <RatingButtons
             visible={false}
-            back={back}
-            front={front}
-            ratingPending={ratingPending}
-            pendingQuality={pendingQuality}
-            onRate={onRate}
-            hardLabel={hardLabel}
-            goodLabel={goodLabel}
-            easyLabel={easyLabel}
+            {...(isPlaceholder ? placeholderProps : props)}
           />
-          <p className="text-xs text-slate-400 text-center relative z-10 select-none">
+          <p className="text-xs text-slate-400 text-center relative z-10 select-none group-data-placeholder:text-transparent group-data-placeholder:bg-slate-400/20 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
             Tap or drag to flip
           </p>
         </motion.div>
 
         {/* ─── Back face ─── */}
-        <motion.div
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-            position: "absolute",
-            inset: 0,
-            opacity: backOpacity,
-          }}
-          className={cn(faceBase, "border border-slate-200 bg-white shadow-lg")}
-        >
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 text-center">
-            Back
-          </p>
-          <div className="flex-1 flex items-center justify-center py-6 min-h-[120px]">
-            <p className="text-xl text-slate-700 break-words text-center">
-              {back}
+        {!isPlaceholder && (
+          <motion.div
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              position: "absolute",
+              inset: 0,
+              opacity: backOpacity,
+            }}
+            className={cn(
+              faceBase,
+              "border border-slate-200 bg-white shadow-lg",
+            )}
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 text-center">
+              Back
             </p>
-          </div>
-          {/* Invisible placeholder — matches "Tap or drag to flip" line height */}
-          <p className="text-xs text-center mt-1 mb-0 opacity-0 select-none">
-            placeholder
-          </p>
-          {/* Visible rating buttons */}
-          <RatingButtons
-            visible={true}
-            back={back}
-            front={front}
-            ratingPending={ratingPending}
-            pendingQuality={pendingQuality}
-            onRate={onRate}
-            hardLabel={hardLabel}
-            goodLabel={goodLabel}
-            easyLabel={easyLabel}
-          />
-        </motion.div>
+            <div className="flex-1 flex items-center justify-center py-6 min-h-[120px]">
+              <p className="text-xl text-slate-700 break-words text-center">
+                {isPlaceholder ? "Back text" : props.back}
+              </p>
+            </div>
+            {/* Invisible placeholder — matches "Tap or drag to flip" line height */}
+            <p className="text-xs text-center mt-1 mb-0 opacity-0 select-none">
+              placeholder
+            </p>
+            {/* Visible rating buttons */}
+            <RatingButtons visible={true} {...props} />
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
 }
+
+type RatingButtonsProps = {
+  isPlaceholder?: boolean;
+  visible: boolean;
+  ratingPending: boolean;
+  pendingQuality: RatingQuality | null;
+  onRate: (quality: RatingQuality) => void;
+  hardLabel: string;
+  goodLabel: string;
+  easyLabel: string;
+};
 
 function RatingButtons({
   visible,
@@ -231,7 +228,7 @@ function RatingButtons({
   hardLabel,
   goodLabel,
   easyLabel,
-}: { visible: boolean } & NCardStudyProps) {
+}: RatingButtonsProps) {
   return (
     <div
       className={cn(

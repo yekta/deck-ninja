@@ -20,38 +20,41 @@ import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "motion/react";
 
-interface NDeckProps {
-  id: string;
-  name: string;
-  description?: string;
-  totalCards: number;
-  newCount: number;
-  learningCount: number;
-  dueCount: number;
-  isRecentlyUpdated: boolean;
-  studyHref: string;
-  manageHref: string;
-  onAddCard: () => void;
-  onRename: () => void;
-  onDelete: () => void;
-}
+type NDeckProps =
+  | { isPlaceholder: true }
+  | {
+      isPlaceholder?: never;
+      id: string;
+      name: string;
+      description?: string;
+      totalCards: number;
+      newCount: number;
+      learningCount: number;
+      dueCount: number;
+      isRecentlyUpdated: boolean;
+      studyHref: string;
+      manageHref: string;
+      onAddCard: () => void;
+      onRename: () => void;
+      onDelete: () => void;
+    };
 
-export function NDeck({
-  name,
-  description,
-  totalCards,
-  newCount,
-  learningCount,
-  dueCount,
-  isRecentlyUpdated,
-  studyHref,
-  manageHref,
-  onAddCard,
-  onRename,
-  onDelete,
-}: NDeckProps) {
+export function NDeck(props: NDeckProps) {
+  const { isPlaceholder } = props;
+
+  const name = isPlaceholder ? "Deck Name" : props.name;
+  const description = isPlaceholder ? "A short description" : props.description;
+  const totalCards = isPlaceholder ? 0 : props.totalCards;
+  const newCount = isPlaceholder ? 0 : props.newCount;
+  const learningCount = isPlaceholder ? 0 : props.learningCount;
+  const dueCount = isPlaceholder ? 0 : props.dueCount;
+  const isRecentlyUpdated = isPlaceholder ? false : props.isRecentlyUpdated;
+
   return (
-    <div className="relative pt-3 pl-3">
+    <div
+      className="group relative pt-3 pl-3"
+      data-placeholder={isPlaceholder || undefined}
+    >
       {/* Ghost card 2 — bottom of stack */}
       <div className="absolute -top-2 left-3 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-slate-200 bg-white rotate-[2deg] origin-bottom-left" />
       {/* Ghost card 1 */}
@@ -61,26 +64,31 @@ export function NDeck({
         <Card className="flex flex-col shadow-md">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 gap-4">
             <div className="space-y-1 min-w-0">
-              <CardTitle className="truncate">{name}</CardTitle>
-              {description && (
-                <CardDescription className="truncate">
-                  {description}
+              <CardTitle className="truncate group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+                {name}
+              </CardTitle>
+              {(isPlaceholder || description) && (
+                <CardDescription className="truncate group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+                  {description ?? "\u00a0"}
                 </CardDescription>
               )}
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium hover:bg-slate-100 h-8 w-8 shrink-0 focus-visible:outline-none">
-                <MoreVertical className="h-4 w-4 text-slate-500" />
+              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium hover:bg-slate-100 h-8 w-8 shrink-0 focus-visible:outline-none group-data-placeholder:pointer-events-none group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:text-transparent">
+                <MoreVertical className="h-4 w-4 text-slate-500 group-data-placeholder:opacity-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="cursor-pointer" onClick={onRename}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={isPlaceholder ? undefined : props.onRename}
+                >
                   <Pencil className="h-4 w-4 mr-2" />
                   Rename Deck
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
                   className="cursor-pointer"
-                  onClick={onDelete}
+                  onClick={isPlaceholder ? undefined : props.onDelete}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Deck
@@ -98,39 +106,63 @@ export function NDeck({
                     : "text-slate-500 bg-transparent",
                 )}
               >
-                {totalCards} {totalCards === 1 ? "card" : "cards"}
+                <p className="group-data-placeholder:text-transparent group-data-placeholder:rounded group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:select-none">
+                  {totalCards} {totalCards === 1 ? "card" : "cards"}
+                </p>
               </div>
               <div className="flex items-center gap-4 text-sm font-medium">
-                <div className="flex items-center gap-1.5 text-blue-600">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                <div className="flex items-center gap-1.5 text-blue-600 group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 group-data-placeholder:opacity-0" />
                   {newCount} New
                 </div>
-                <div className="flex items-center gap-1.5 text-red-600">
-                  <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                <div className="flex items-center gap-1.5 text-red-600 group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+                  <span className="w-2 h-2 rounded-full bg-red-600 group-data-placeholder:opacity-0" />
                   {learningCount} Learn
                 </div>
-                <div className="flex items-center gap-1.5 text-green-600">
-                  <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                <div className="flex items-center gap-1.5 text-green-600 group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+                  <span className="w-2 h-2 rounded-full bg-green-600 group-data-placeholder:opacity-0" />
                   {dueCount} Due
                 </div>
               </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            <Link href={studyHref} className="w-full">
-              <Button variant="default" className="w-full">
-                Study
+            {isPlaceholder ? (
+              <Button
+                variant="default"
+                className="w-full text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
+              >
+                &nbsp;
               </Button>
-            </Link>
-            <div className="flex w-full gap-2">
-              <Button variant="outline" className="flex-1" onClick={onAddCard}>
-                Add Card
-              </Button>
-              <Link href={manageHref} className="flex-1">
-                <Button variant="outline" className="w-full">
-                  Manage
+            ) : (
+              <Link href={props.studyHref} className="w-full">
+                <Button variant="default" className="w-full">
+                  Study
                 </Button>
               </Link>
+            )}
+            <div className="flex w-full gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 group-data-placeholder:text-transparent group-data-placeholder:bg-slate-200 group-data-placeholder:animate-pulse group-data-placeholder:border-transparent group-data-placeholder:pointer-events-none group-data-placeholder:hover:bg-slate-200"
+                onClick={isPlaceholder ? undefined : props.onAddCard}
+              >
+                {isPlaceholder ? "\u00a0" : "Add Card"}
+              </Button>
+              {isPlaceholder ? (
+                <Button
+                  variant="outline"
+                  className="flex-1 text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200"
+                >
+                  &nbsp;
+                </Button>
+              ) : (
+                <Link href={props.manageHref} className="flex-1">
+                  <Button variant="outline" className="w-full">
+                    Manage
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardFooter>
         </Card>

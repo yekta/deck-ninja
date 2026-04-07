@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
+import { NCard } from "@/components/n-card";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,23 +13,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface Flashcard {
   id: string;
@@ -188,83 +181,44 @@ export default function DeckPage() {
     editCardMutation.mutate();
   };
 
-  if (loading || (user && isPending)) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <Navbar
-          backHref="/"
-          title={<Skeleton className="h-6 w-48" />}
-          rightActions={
-            <Button className="text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200">
-              &nbsp;
-            </Button>
-          }
-        />
+  if (!loading && !user) return null;
 
-        <main className="max-w-5xl mx-auto p-6 space-y-8">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold tracking-tight text-transparent bg-slate-200 animate-pulse rounded w-32 max-w-full shrink">
-              &nbsp;
-            </h2>
-            <Button className="text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200 shrink-0">
-              <Plus className="h-4 w-4 mr-2 opacity-0" />
-              &nbsp;
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i}>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 gap-4">
-                  <CardTitle className="text-base font-medium text-transparent bg-slate-200 animate-pulse rounded w-12 shrink-0">
-                    &nbsp;
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 bg-slate-200 animate-pulse pointer-events-none hover:bg-slate-200 shrink-0"
-                  >
-                    <MoreVertical className="h-4 w-4 opacity-0" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="text-sm text-transparent bg-slate-200 animate-pulse rounded mb-4 w-full truncate">
-                    &nbsp;
-                  </p>
-                  <div className="border-t pt-4">
-                    <h4 className="text-xs font-semibold uppercase mb-1 text-transparent bg-slate-200 animate-pulse rounded w-12">
-                      &nbsp;
-                    </h4>
-                    <p className="text-sm text-transparent bg-slate-200 animate-pulse rounded w-full truncate">
-                      &nbsp;
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
-  if (!user) return null;
+  const showPlaceholder = loading || isPending;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar
         backHref="/"
-        title={deckName}
+        title={
+          showPlaceholder ? (
+            <div className="h-6 w-48 bg-slate-200 animate-pulse rounded" />
+          ) : (
+            deckName
+          )
+        }
         rightActions={
-          <Link href={`/study/${id}`}>
-            <Button>Study Deck</Button>
-          </Link>
+          showPlaceholder ? (
+            <Button className="text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200">
+              &nbsp;
+            </Button>
+          ) : (
+            <Link href={`/study/${id}`}>
+              <Button>Study Deck</Button>
+            </Link>
+          )
         }
       />
 
       <main className="max-w-5xl mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold tracking-tight truncate min-w-0">
-            Cards ({cards.length})
+          <h2
+            className={cn(
+              "text-2xl font-bold tracking-tight truncate min-w-0",
+              showPlaceholder &&
+                "text-transparent bg-slate-200 animate-pulse rounded w-32 select-none",
+            )}
+          >
+            {showPlaceholder ? "\u00a0" : `Cards (${cards.length})`}
           </h2>
 
           <Dialog
@@ -344,9 +298,19 @@ export default function DeckPage() {
           </Dialog>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Card
+            <DialogTrigger
+              render={
+                <Button
+                  className={cn(
+                    "shrink-0",
+                    showPlaceholder &&
+                      "text-transparent bg-slate-200 animate-pulse border-transparent pointer-events-none hover:bg-slate-200",
+                  )}
+                />
+              }
+            >
+              <Plus className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")} />
+              {showPlaceholder ? "\u00a0" : "Add Card"}
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleAddCard}>
@@ -387,7 +351,13 @@ export default function DeckPage() {
           </Dialog>
         </div>
 
-        {cards.length === 0 ? (
+        {showPlaceholder ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <NCard key={i} isPlaceholder />
+            ))}
+          </div>
+        ) : cards.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-lg border border-dashed">
             <h3 className="text-lg font-medium text-slate-900 mb-2">
               No cards yet
@@ -403,50 +373,18 @@ export default function DeckPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cards.map((card) => (
-              <Card key={card.id}>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base font-medium">Front</CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium hover:bg-slate-100 h-8 w-8 shrink-0 focus-visible:outline-none">
-                      <MoreVertical className="h-4 w-4 text-slate-500" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setCardToEdit(card);
-                          setEditFront(card.front);
-                          setEditBack(card.back);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit Card
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        className="cursor-pointer"
-                        onClick={() => setCardToDelete(card.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Card
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="text-sm text-slate-900 mb-4 line-clamp-3 break-words">
-                    {card.front}
-                  </p>
-                  <div className="border-t pt-4">
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">
-                      Back
-                    </h4>
-                    <p className="text-sm text-slate-900 line-clamp-3 break-words">
-                      {card.back}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <NCard
+                key={card.id}
+                id={card.id}
+                front={card.front}
+                back={card.back}
+                onEdit={() => {
+                  setCardToEdit(card);
+                  setEditFront(card.front);
+                  setEditBack(card.back);
+                }}
+                onDelete={() => setCardToDelete(card.id)}
+              />
             ))}
           </div>
         )}

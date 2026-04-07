@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
+import { NCardStudy } from "@/components/n-card-study";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
 import { calculateSM2 } from "@/lib/sm2";
@@ -12,7 +12,6 @@ import confetti from "canvas-confetti";
 import { addDays } from "date-fns";
 import { BrainCircuit, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { NCardStudy } from "@/components/n-card-study";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -179,49 +178,41 @@ export default function StudyPage() {
     }
   }, [isFinished, dueCards.length]);
 
-  if (loading || (user && isPending)) {
-    return (
-      <div className="h-svh overflow-hidden bg-slate-50 flex flex-col">
-        <Navbar
-          backHref="/"
-          title="Loading..."
-          rightActions={
-            <div className="text-sm font-medium text-transparent bg-slate-200 animate-pulse rounded w-12">
-              &nbsp;
-            </div>
-          }
-        />
-        <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full overflow-hidden">
-          <div className="w-full space-y-8">
-            <Card className="min-h-[300px] flex flex-col">
-              <CardContent className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <div className="text-2xl font-medium text-transparent bg-slate-200 animate-pulse rounded mb-8 w-3/4 h-8"></div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      </div>
-    );
-  }
-  if (!user) return null;
+  if (!loading && !user) return null;
+
+  const showPlaceholder = loading || isPending;
 
   return (
     <div className="h-svh overflow-hidden bg-slate-50 flex flex-col">
       <Navbar
         backHref="/"
-        title={deckName}
+        title={
+          showPlaceholder ? (
+            <div className="h-5 w-36 bg-slate-200 animate-pulse rounded" />
+          ) : (
+            deckName
+          )
+        }
         rightActions={
-          !isFinished &&
-          dueCards.length > 0 && (
-            <div className="text-sm font-medium text-slate-500">
-              {currentIndex + 1} / {dueCards.length}
+          showPlaceholder ? (
+            <div className="text-sm font-medium text-transparent bg-slate-200 animate-pulse rounded w-12">
+              &nbsp;
             </div>
+          ) : (
+            !isFinished &&
+            dueCards.length > 0 && (
+              <div className="text-sm font-medium text-slate-500">
+                {currentIndex + 1} / {dueCards.length}
+              </div>
+            )
           )
         }
       />
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full overflow-hidden">
-        {totalCards === 0 ? (
+        {showPlaceholder ? (
+          <NCardStudy isPlaceholder />
+        ) : totalCards === 0 ? (
           <div className="text-center space-y-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 text-blue-600 mb-4">
               <BrainCircuit className="w-10 h-10" />
