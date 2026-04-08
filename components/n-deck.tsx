@@ -52,16 +52,16 @@ export function NDeck(props: NDeckProps) {
 
   return (
     <div
-      className="group relative pt-3 pl-3"
+      className="group relative"
       data-placeholder={isPlaceholder || undefined}
     >
       {/* Ghost card 2 — bottom of stack */}
       {(isPlaceholder || totalCards > 2) && (
-        <div className="absolute -top-2 left-3 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-border bg-card rotate-[2deg] origin-bottom-left" />
+        <div className="absolute -top-2.5 -left-0.5 w-full h-full rounded-xl border border-border bg-card -rotate-[1deg] origin-bottom-left" />
       )}
       {/* Ghost card 1 */}
       {(isPlaceholder || totalCards > 1) && (
-        <div className="absolute top-1 left-1 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-border bg-card -rotate-[0.5deg] origin-bottom-left" />
+        <div className="absolute -top-1 left-2.5 w-full h-full rounded-xl border border-border bg-card -rotate-[1deg] origin-bottom-left" />
       )}
       {/* Main card */}
       <motion.div className="relative z-10">
