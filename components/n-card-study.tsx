@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Rating, type Grade } from "ts-fsrs";
 import { useState, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
+import Dots from "@/components/dots";
 
 type NCardStudyProps =
   | { isPlaceholder: true }
@@ -153,15 +154,18 @@ export function NCardStudy(props: NCardStudyProps) {
           style={{ backfaceVisibility: "hidden", opacity: frontOpacity }}
           className={cn(
             faceBase,
-            "border border-amber-200/60 bg-[#FEFDF8] shadow-lg overflow-hidden flex flex-col items-center",
+            "border border-border bg-card shadow-lg overflow-hidden flex flex-col items-center",
           )}
         >
-          <p className="max-w-full shrink min-w-0 text-xs font-semibold uppercase tracking-widest text-amber-500/60 mb-5 text-center relative z-10 group-data-placeholder:text-transparent group-data-placeholder:bg-amber-500/20 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+          <p className="max-w-full shrink min-w-0 text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 text-center relative z-10 group-data-placeholder:text-transparent group-data-placeholder:bg-slate-400/20 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
             Front
           </p>
-          <div className="flex-1 flex items-center justify-center relative z-10 py-6 min-h-[120px]">
-            <p className="text-2xl font-medium text-slate-900 break-words text-center group-data-placeholder:text-transparent group-data-placeholder:bg-slate-900/15 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+          <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 py-6 min-h-[calc(30svh-80px)]">
+            <p className="max-w-full text-2xl font-medium text-slate-900 break-words text-center group-data-placeholder:text-transparent group-data-placeholder:bg-slate-900/15 group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
               {isPlaceholder ? "Front text" : props.front}
+            </p>
+            <p className="max-w-full text-xl text-slate-700 break-words text-center opacity-0">
+              {isPlaceholder ? "Back text" : props.back}
             </p>
           </div>
           {/* Invisible buttons — keep layout identical to back face */}
@@ -186,19 +190,23 @@ export function NCardStudy(props: NCardStudyProps) {
             }}
             className={cn(
               faceBase,
-              "border border-slate-200 bg-white shadow-lg",
+              "border overflow-hidden border-border bg-card shadow-lg",
             )}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 text-center">
+            <Dots />
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 text-center relative">
               Back
             </p>
-            <div className="flex-1 flex items-center justify-center py-6 min-h-[120px]">
-              <p className="text-xl text-slate-700 break-words text-center">
+            <div className="w-full flex-1 flex flex-col items-center justify-center py-6 min-h-[120px] relative">
+              <p className="max-w-full text-xl text-slate-700 break-words text-center">
                 {isPlaceholder ? "Back text" : props.back}
+              </p>
+              <p className="opacity-0 max-w-full text-2xl font-medium text-transparent break-words text-center">
+                {isPlaceholder ? "Front text" : props.front}
               </p>
             </div>
             {/* Invisible placeholder — matches "Tap or drag to flip" line height */}
-            <p className="text-xs text-center mt-1 mb-0 opacity-0 select-none">
+            <p className="text-xs text-center mt-1 mb-0 opacity-0 select-none relative">
               placeholder
             </p>
             {/* Visible rating buttons */}
@@ -235,7 +243,7 @@ function RatingButtons({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 transition-opacity duration-150",
+        "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 transition-opacity duration-150 relative",
         visible ? "opacity-100" : "opacity-0 pointer-events-none",
       )}
     >

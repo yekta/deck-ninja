@@ -56,9 +56,9 @@ export function NDeck(props: NDeckProps) {
       data-placeholder={isPlaceholder || undefined}
     >
       {/* Ghost card 2 — bottom of stack */}
-      <div className="absolute -top-2 left-3 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-slate-200 bg-white rotate-[2deg] origin-bottom-left" />
+      <div className="absolute -top-2 left-3 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-border bg-card rotate-[2deg] origin-bottom-left shadow-md" />
       {/* Ghost card 1 */}
-      <div className="absolute top-1 left-1 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-slate-200 bg-white -rotate-[0.5deg] origin-bottom-left" />
+      <div className="absolute top-1 left-1 w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-xl border border-border bg-card -rotate-[0.5deg] origin-bottom-left shadow-md" />
       {/* Main card */}
       <motion.div className="relative z-10">
         <Card className="flex flex-col shadow-md">
