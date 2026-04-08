@@ -198,7 +198,7 @@ export default function DeckPage() {
             </Button>
           ) : (
             <Link href={`/study/${id}`}>
-              <Button>Study Deck</Button>
+              <Button>Study</Button>
             </Link>
           )
         }

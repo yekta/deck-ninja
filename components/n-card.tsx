@@ -64,11 +64,11 @@ export function NCard(props: NCardProps) {
       )}
 
       {/* Front */}
-      <div className="px-5 pt-5 pb-4 relative bg-card">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:w-10 group-data-placeholder:select-none">
+      <div className="w-full flex flex-col items-start px-5 pt-5 pb-4 relative bg-card">
+        <p className="shrink max-w-full min-w-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:w-10 group-data-placeholder:select-none">
           Front
         </p>
-        <p className="text-sm text-foreground line-clamp-3 break-words font-medium leading-relaxed group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+        <p className="shrink max-w-full min-w-0 text-sm text-foreground line-clamp-3 break-words font-medium leading-relaxed group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
           {front}
         </p>
       </div>
@@ -77,11 +77,11 @@ export function NCard(props: NCardProps) {
       <div className="w-full h-px bg-border relative z-10" />
 
       {/* Back */}
-      <div className="px-5 pt-3 pb-5 relative">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:w-10 group-data-placeholder:select-none">
+      <div className="px-5 pt-3 pb-5 relative w-full flex flex-col items-start">
+        <p className="shrink max-w-full min-w-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:w-10 group-data-placeholder:select-none">
           Back
         </p>
-        <p className="text-sm text-foreground/80 line-clamp-3 break-words leading-relaxed group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
+        <p className="shrink max-w-full min-w-0 text-sm text-foreground/80 line-clamp-3 break-words leading-relaxed group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:rounded group-data-placeholder:select-none">
           {back}
         </p>
       </div>
