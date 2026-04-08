@@ -104,6 +104,9 @@ export function fsrsCardToDbRow(card: FSRSCard) {
   };
 }
 
+/** Cards due within this window are re-queued in the same study session. */
+export const SHORT_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
 export function formatInterval(dueDate: Date, now: Date): string {
   const diffMs = dueDate.getTime() - now.getTime();
   const diffMinutes = Math.round(diffMs / 60_000);

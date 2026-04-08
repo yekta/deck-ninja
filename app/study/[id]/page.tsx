@@ -13,6 +13,7 @@ import {
   reviewLogToDbRow,
   formatInterval,
   Rating,
+  SHORT_INTERVAL_MS,
   type Grade,
 } from "@/lib/fsrs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,13 +39,20 @@ interface Flashcard {
   last_review: string | null;
 }
 
+interface QueueItem {
+  card: Flashcard;
+  isRequeued: boolean;
+  dueTime: number;
+}
+
 export default function StudyPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { user, loading } = useAuth();
   const queryClient = useQueryClient();
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [reviewedCount, setReviewedCount] = useState(0);
 
   const { data: userSettings } = useQuery({
     queryKey: ["userSettings", user?.id],
@@ -98,12 +106,14 @@ export default function StudyPage() {
         .select("*", { count: "exact", head: true })
         .eq("deck_id", id);
 
-      const now = new Date().toISOString();
+      const soonCutoff = new Date(
+        Date.now() + SHORT_INTERVAL_MS,
+      ).toISOString();
       const { data, error } = await supabase
         .from("cards")
         .select("*")
         .eq("deck_id", id)
-        .lte("due", now);
+        .lte("due", soonCutoff);
 
       if (countError)
         await handleDbError(countError, OperationType.GET, "cards");
@@ -117,7 +127,20 @@ export default function StudyPage() {
 
   const isPending = isPendingDecks || isPendingCards;
   const totalCards = studyData?.totalCards || 0;
-  const dueCards = studyData?.dueCards || [];
+
+  // Initialize queue from fetched data
+  useEffect(() => {
+    if (studyData?.dueCards.length) {
+      setQueue(
+        studyData.dueCards.map((card) => ({
+          card,
+          isRequeued: false,
+          dueTime: new Date(card.due).getTime(),
+        })),
+      );
+      setReviewedCount(0);
+    }
+  }, [studyData]);
 
   const rateCardMutation = useMutation({
     mutationFn: async ({
@@ -156,25 +179,57 @@ export default function StudyPage() {
           OperationType.CREATE,
           "review_logs",
         );
+
+      return { result, dbFields, now };
     },
-    onSuccess: () => {
+    onSuccess: ({ result, dbFields, now }, variables) => {
       queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      setCurrentIndex((prev) => prev + 1);
+
+      const newDueMs = result.card.due.getTime();
+      const intervalMs = newDueMs - now.getTime();
+
+      setQueue((prev) => {
+        const [current, ...rest] = prev;
+        if (!current) return prev;
+
+        if (intervalMs < SHORT_INTERVAL_MS) {
+          const updatedCard: Flashcard = {
+            ...current.card,
+            ...dbFields,
+          };
+          const requeued: QueueItem = {
+            card: updatedCard,
+            isRequeued: true,
+            dueTime: newDueMs,
+          };
+          const firstPass = rest.filter((item) => !item.isRequeued);
+          const requeuedItems = [
+            ...rest.filter((item) => item.isRequeued),
+            requeued,
+          ].sort((a, b) => a.dueTime - b.dueTime);
+          return [...firstPass, ...requeuedItems];
+        }
+
+        return rest;
+      });
+
+      setReviewedCount((prev) => prev + 1);
     },
     onError: (error) => {
       console.error(error);
     },
   });
 
+  const currentCard = queue[0]?.card ?? null;
+  const isFinished = queue.length === 0 && reviewedCount > 0;
+  const hasNoDueCards =
+    !isPending && studyData && studyData.dueCards.length === 0 && totalCards > 0;
+
   const handleRate = (rating: Grade) => {
-    if (!user) return;
-    const currentCard = dueCards[currentIndex];
+    if (!user || !currentCard) return;
     rateCardMutation.mutate({ rating, currentCard });
   };
-
-  const isFinished = currentIndex >= dueCards.length;
-  const currentCard = dueCards[currentIndex];
 
   const previewLabels = currentCard
     ? (() => {
@@ -191,18 +246,18 @@ export default function StudyPage() {
     : null;
 
   useEffect(() => {
-    if (isFinished && dueCards.length > 0) {
+    if (isFinished) {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
       });
     }
-  }, [isFinished, dueCards.length]);
+  }, [isFinished]);
 
   if (!loading && !user) return null;
 
-  const showPlaceholder = loading || isPending;
+  const showPlaceholder = loading || isPending || (!currentCard && !isFinished && !hasNoDueCards);
 
   return (
     <div className="h-svh overflow-hidden bg-slate-50 flex flex-col">
@@ -222,9 +277,9 @@ export default function StudyPage() {
             </div>
           ) : (
             !isFinished &&
-            dueCards.length > 0 && (
+            queue.length > 0 && (
               <div className="text-sm font-medium text-slate-500">
-                {currentIndex + 1} / {dueCards.length}
+                {reviewedCount + 1} / {reviewedCount + queue.length}
               </div>
             )
           )
@@ -234,7 +289,7 @@ export default function StudyPage() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full overflow-hidden">
         {showPlaceholder ? (
           <NCardStudy isPlaceholder />
-        ) : totalCards === 0 ? (
+        ) : totalCards === 0 && !hasNoDueCards ? (
           <div className="text-center space-y-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 text-blue-600 mb-4">
               <BrainCircuit className="w-10 h-10" />
@@ -252,7 +307,7 @@ export default function StudyPage() {
               </Link>
             </div>
           </div>
-        ) : isFinished ? (
+        ) : isFinished || hasNoDueCards ? (
           <div className="text-center space-y-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-4">
               <CheckCircle2 className="w-10 h-10" />
@@ -274,7 +329,7 @@ export default function StudyPage() {
           </div>
         ) : (
           <NCardStudy
-            key={currentCard.id}
+            key={`${currentCard.id}-${reviewedCount}`}
             front={currentCard.front}
             back={currentCard.back}
             onRate={handleRate}
