@@ -213,7 +213,12 @@ export default function DeckPage() {
                 "text-transparent bg-slate-200 animate-pulse rounded w-32 select-none",
             )}
           >
-            {showPlaceholder ? "\u00a0" : `Cards (${cards.length})`}
+            {showPlaceholder ? "\u00a0" : `Cards`}{" "}
+            {!showPlaceholder && (
+              <span className="font-normal text-muted-foreground">
+                ({cards.length})
+              </span>
+            )}
           </h2>
 
           <Dialog
@@ -304,7 +309,9 @@ export default function DeckPage() {
                 />
               }
             >
-              <Plus className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")} />
+              <Plus
+                className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")}
+              />
               {showPlaceholder ? "\u00a0" : "Add Card"}
             </DialogTrigger>
             <DialogContent>

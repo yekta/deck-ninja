@@ -270,8 +270,8 @@ export default function Home() {
             DeckNinja
           </h1>
           <p className="text-lg text-slate-600">
-            Master any subject with our spaced repetition flashcard app. Sign in
-            to create your decks and start learning.
+            Master any subject with spaced repetition. Sign in to start
+            learning.
           </p>
           <Button
             size="lg"
@@ -301,7 +301,12 @@ export default function Home() {
                 "text-transparent bg-slate-200 animate-pulse rounded w-48 select-none",
             )}
           >
-            {showPlaceholder ? "\u00a0" : `Decks (${decks.length})`}
+            {showPlaceholder ? "\u00a0" : `Decks`}{" "}
+            {!showPlaceholder && (
+              <span className="font-normal text-muted-foreground">
+                ({decks.length})
+              </span>
+            )}
           </h2>
 
           <Dialog
@@ -490,7 +495,9 @@ export default function Home() {
                 />
               }
             >
-              <Plus className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")} />
+              <Plus
+                className={cn("h-4 w-4 mr-2", showPlaceholder && "opacity-0")}
+              />
               {showPlaceholder ? "\u00a0" : "Create Deck"}
             </DialogTrigger>
             <DialogContent>
