@@ -4,21 +4,21 @@ import { useAuth } from "@/components/auth-provider";
 import { NCardStudy } from "@/components/n-card-study";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
 import {
   createUserScheduler,
   dbRowToFSRSCard,
-  fsrsCardToDbRow,
-  reviewLogToDbRow,
   formatInterval,
+  fsrsCardToDbRow,
   Rating,
+  reviewLogToDbRow,
   SHORT_INTERVAL_MS,
   type Grade,
 } from "@/lib/fsrs";
+import { supabase } from "@/lib/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
-import { BrainCircuit, CheckCircle2 } from "lucide-react";
+import { BrushCleaningIcon, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -258,8 +258,11 @@ export default function StudyPage() {
 
   if (!loading && !user) return null;
 
+  const hasNoCards = !isPending && studyData && totalCards === 0;
   const showPlaceholder =
-    loading || isPending || (!currentCard && !isFinished && !hasNoDueCards);
+    loading ||
+    isPending ||
+    (!currentCard && !isFinished && !hasNoDueCards && !hasNoCards);
 
   return (
     <div className="h-svh overflow-hidden flex flex-col">
@@ -288,22 +291,23 @@ export default function StudyPage() {
         }
       />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center p-5 max-w-4xl mx-auto w-full overflow-hidden">
         {showPlaceholder ? (
           <NCardStudy isPlaceholder />
         ) : totalCards === 0 && !hasNoDueCards ? (
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-brand-muted text-brand mb-4">
-              <BrainCircuit className="w-10 h-10" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-border text-foreground mb-4">
+              <BrushCleaningIcon className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground">
-              This deck is empty
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              You need to add some flashcards to this deck before you can study
-              it.
-            </p>
-            <div className="pt-6 flex gap-4 justify-center">
+            <div className="max-w-full flex flex-col gap-2">
+              <h2 className="text-3xl font-bold text-foreground">
+                This deck is empty
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-lg mx-auto">
+                Add some flashcards to this deck to study it.
+              </p>
+            </div>
+            <div className="flex gap-4 justify-center">
               <Link href={`/deck/${id}`}>
                 <Button>Add Cards</Button>
               </Link>
@@ -314,13 +318,15 @@ export default function StudyPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success-muted text-success mb-4">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground">
-              You&apos;re all caught up!
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              You have reviewed all the due cards in this deck. Great job!
-            </p>
-            <div className="pt-6 flex gap-4 justify-center">
+            <div className="max-w-full flex flex-col gap-2">
+              <h2 className="text-3xl font-bold text-foreground">
+                You're all caught up!
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-lg mx-auto">
+                You have reviewed all the due cards in this deck. Great job!
+              </p>
+            </div>
+            <div className="flex gap-4 justify-center">
               <Link href="/">
                 <Button variant="outline">Back to Dashboard</Button>
               </Link>

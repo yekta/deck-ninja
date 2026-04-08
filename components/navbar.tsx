@@ -25,7 +25,7 @@ export function Navbar({ backHref, title, rightActions }: NavbarProps) {
 
   return (
     <header className="bg-background border-b h-14 flex items-center sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-6 w-full flex items-center justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-5 w-full flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <Link href="/" className="flex items-center shrink-0 group">
             <Logo className="group-active:rotate-5 group-active:translate-y-0.5 transition-transform" />

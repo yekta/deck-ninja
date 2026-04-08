@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { handleDbError, OperationType } from "@/lib/db-error";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -182,29 +182,37 @@ export default function DeckPage() {
 
   return (
     <div className="min-h-screen">
-      <Navbar
-        backHref="/"
-        title={
-          showPlaceholder ? (
-            <div className="h-6 w-48 bg-skeleton animate-pulse rounded" />
-          ) : (
-            deckName
-          )
-        }
-        rightActions={
-          showPlaceholder ? (
+      <Navbar />
+
+      <main className="max-w-5xl mx-auto p-5 space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Link href="/" className="shrink-0 -ml-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            {showPlaceholder ? (
+              <div className="h-7 w-48 bg-skeleton animate-pulse rounded" />
+            ) : (
+              <h1 className="text-xl font-semibold truncate min-w-0">
+                {deckName}
+              </h1>
+            )}
+          </div>
+          {showPlaceholder ? (
             <Button className="text-transparent bg-skeleton animate-pulse border-transparent pointer-events-none hover:bg-skeleton">
               &nbsp;
             </Button>
           ) : (
             <Link href={`/study/${id}`}>
-              <Button>Study</Button>
+              <Button>Study Deck</Button>
             </Link>
-          )
-        }
-      />
+          )}
+        </div>
 
-      <main className="max-w-5xl mx-auto p-6 space-y-8">
+        <div className="w-full h-px bg-border rounded-full" />
+
         <div className="flex items-center justify-between gap-4">
           <h2
             className={cn(

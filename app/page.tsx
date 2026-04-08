@@ -295,7 +295,7 @@ export default function Home() {
     <div className="min-h-screen">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto p-6 space-y-8">
+      <main className="max-w-5xl mx-auto p-5 space-y-8">
         <div className="flex items-center justify-between gap-4">
           <h2
             className={cn(
