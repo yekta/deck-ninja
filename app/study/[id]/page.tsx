@@ -331,6 +331,7 @@ export default function StudyPage() {
   const showPlaceholder =
     loading ||
     isPending ||
+    !deckData ||
     (!currentCard && !isFinished && !hasNoDueCards && !hasNoCards);
 
   return (

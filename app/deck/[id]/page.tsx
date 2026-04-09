@@ -44,25 +44,29 @@ export default function DeckPage() {
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
 
-  const { data: deckName = "Loading...", isPending: isPendingDecks } = useQuery(
-    {
-      queryKey: ["deck", id],
-      queryFn: async () => {
-        if (!user || !id) return "Loading...";
-        const { data, error } = await supabase
-          .from("decks")
-          .select("name")
-          .eq("id", id)
-          .single();
-        if (error || !data) {
-          router.push("/");
-          return "Deck not found";
-        }
-        return data.name as string;
-      },
-      enabled: !!user && !!id,
+  const { data: deckData, isPending: isPendingDecks } = useQuery({
+    queryKey: ["deck", id],
+    queryFn: async () => {
+      if (!user || !id) return null;
+      const { data, error } = await supabase
+        .from("decks")
+        .select("name, new_cards_per_day, max_reviews_per_day")
+        .eq("id", id)
+        .single();
+      if (error || !data) {
+        router.push("/");
+        return null;
+      }
+      return data as {
+        name: string;
+        new_cards_per_day: number;
+        max_reviews_per_day: number;
+      };
     },
-  );
+    enabled: !!user && !!id,
+  });
+
+  const deckName = deckData?.name ?? "Loading...";
 
   const { data: cards = [], isPending: isPendingCards } = useQuery({
     queryKey: ["cards", id, user?.id],

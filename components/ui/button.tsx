@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Loader2 } from "lucide-react"
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
+import { LoaderIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -40,10 +40,11 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
-interface ButtonProps extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {
+interface ButtonProps
+  extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {
   isPending?: boolean;
 }
 
@@ -68,18 +69,25 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }), isPending && "text-transparent [&_svg:not(.loader)]:opacity-0")}
+      data-pending={isPending ? "true" : undefined}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        "data-pending:text-transparent data-pending:transition-none",
+      )}
       disabled={isPending || disabled}
       {...props}
     >
-      {isPending && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className={cn("animate-spin loader", loaderColorClass)} />
-        </div>
-      )}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-data-pending/button:opacity-100 pointer-events-none">
+        <LoaderIcon
+          className={cn(
+            "group-data-pending/button:animate-spin",
+            loaderColorClass,
+          )}
+        />
+      </div>
       {children}
     </ButtonPrimitive>
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };
