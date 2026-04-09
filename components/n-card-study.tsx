@@ -129,17 +129,14 @@ export function NCardStudy(props: NCardStudyProps) {
   };
 
   /* ─── Shared face structure ─── */
-  const faceBase = "flex flex-col p-8 rounded-2xl select-none";
+  const faceBase = "flex flex-col p-4 md:p-8 rounded-2xl select-none";
 
   return (
     <div
       data-placeholder={isPlaceholder ? "true" : undefined}
-      className="w-full group"
-      style={{
-        perspective: "1400px",
-        cursor: isGrabbing ? "grabbing" : isBack ? "default" : "grab",
-        touchAction: "pan-y",
-      }}
+      data-grabbing={isGrabbing ? "true" : undefined}
+      data-is-back={isBack ? "true" : undefined}
+      className="w-full group touch-pan-y perspective-distant md:perspective-[1600px] data-grabbing:cursor-grabbing cursor-grab data-is-back:cursor-default"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -243,13 +240,13 @@ function RatingButtons({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 transition-opacity duration-150 relative",
+        "grid grid-cols-2 md:grid-cols-4 gap-3 pt-5 transition-opacity duration-150 relative",
         visible ? "opacity-100" : "opacity-0 pointer-events-none",
       )}
     >
       <Button
         variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 bg-rating-again border-rating-again-border hover:bg-rating-again-border hover:text-rating-again-hover"
+        className="h-auto py-2.5 md:py-3 flex flex-col gap-0.5 bg-rating-again border-rating-again-border hover:bg-rating-again-border hover:text-rating-again-hover"
         onClick={(e) => {
           e.stopPropagation();
           onRate(Rating.Again);
@@ -262,7 +259,7 @@ function RatingButtons({
       </Button>
       <Button
         variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 bg-rating-hard border-rating-hard-border hover:bg-rating-hard-border hover:text-rating-hard-hover"
+        className="h-auto py-2.5 md:py-3 flex flex-col gap-0.5 bg-rating-hard border-rating-hard-border hover:bg-rating-hard-border hover:text-rating-hard-hover"
         onClick={(e) => {
           e.stopPropagation();
           onRate(Rating.Hard);
@@ -275,7 +272,7 @@ function RatingButtons({
       </Button>
       <Button
         variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 bg-rating-good border-rating-good-border hover:bg-rating-good-border hover:text-rating-good-hover"
+        className="h-auto py-2.5 md:py-3 flex flex-col gap-0.5 bg-rating-good border-rating-good-border hover:bg-rating-good-border hover:text-rating-good-hover"
         onClick={(e) => {
           e.stopPropagation();
           onRate(Rating.Good);
@@ -288,7 +285,7 @@ function RatingButtons({
       </Button>
       <Button
         variant="outline"
-        className="h-auto py-3 flex flex-col gap-0.5 bg-rating-easy border-rating-easy-border hover:bg-rating-easy-border hover:text-rating-easy-hover"
+        className="h-auto py-2.5 md:py-3 flex flex-col gap-0.5 bg-rating-easy border-rating-easy-border hover:bg-rating-easy-border hover:text-rating-easy-hover"
         onClick={(e) => {
           e.stopPropagation();
           onRate(Rating.Easy);
