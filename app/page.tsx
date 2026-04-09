@@ -15,14 +15,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCards, useCreateCard } from "@/hooks/data/use-cards";
+import {
+  useCreateDeck,
+  useDecks,
+  useDeleteDeck,
+  useUpdateDeck,
+  type Deck,
+} from "@/hooks/data/use-decks";
+import { useTodayReviewLogs } from "@/hooks/data/use-review-logs";
 import {
   DEFAULT_MAX_REVIEWS_PER_DAY,
   DEFAULT_NEW_CARDS_PER_DAY,
 } from "@/lib/constants";
-import { handleDbError, OperationType } from "@/lib/db-error";
-import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -30,27 +36,9 @@ import { useState } from "react";
 import Logo from "@/components/icons/logo";
 import { Navbar } from "@/components/navbar";
 
-interface Deck {
-  id: string;
-  name: string;
-  description: string;
-  new_cards_per_day: number;
-  max_reviews_per_day: number;
-  created_at: string;
-}
-
-interface Flashcard {
-  id: string;
-  deck_id: string;
-  due: string;
-  state: string;
-  created_at: string;
-}
-
 export default function Home() {
   const router = useRouter();
   const { user, loading, signInWithGoogle } = useAuth();
-  const queryClient = useQueryClient();
   const nowTime = useNow();
 
   const [newDeckName, setNewDeckName] = useState("");
@@ -72,184 +60,16 @@ export default function Home() {
   const [newCardBack, setNewCardBack] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const { data: decks = [], isPending: isPendingDecks } = useQuery({
-    queryKey: ["decks", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("decks")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) await handleDbError(error, OperationType.GET, "decks");
-      return (data ?? []) as Deck[];
-    },
-    enabled: !!user,
-  });
-
-  const { data: cards = [], isPending: isPendingCards } = useQuery({
-    queryKey: ["cards", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase.from("cards").select("*");
-      if (error) await handleDbError(error, OperationType.GET, "cards");
-      return (data ?? []) as Flashcard[];
-    },
-    enabled: !!user,
-  });
-
-  const { data: todayReviewLogs = [] } = useQuery({
-    queryKey: ["todayReviewLogs", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase
-        .from("review_logs")
-        .select("card_id, state")
-        .gte("review", startOfDay.toISOString());
-      if (error) await handleDbError(error, OperationType.GET, "review_logs");
-      return (data ?? []) as { card_id: string; state: string }[];
-    },
-    enabled: !!user,
-  });
+  const { data: decks = [], isPending: isPendingDecks } = useDecks();
+  const { data: cards = [], isPending: isPendingCards } = useCards();
+  const { data: todayReviewLogs = [] } = useTodayReviewLogs();
 
   const isPending = isPendingDecks || isPendingCards;
 
-  const createDeckMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !newDeckName.trim()) throw new Error("Missing data");
-      const { data, error } = await supabase
-        .from("decks")
-        .insert({
-          user_id: user.id,
-          name: newDeckName.trim(),
-          description: newDeckDesc.trim(),
-        })
-        .select("id")
-        .single();
-      if (error) await handleDbError(error, OperationType.CREATE, "decks");
-      return data!.id as string;
-    },
-    onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ["decks", user?.id] });
-      setNewDeckName("");
-      setNewDeckDesc("");
-      setIsDialogOpen(false);
-      router.push(`/deck/${id}`);
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  const deleteDeckMutation = useMutation({
-    mutationFn: async () => {
-      if (
-        !user ||
-        !deckToDelete ||
-        deleteConfirmation !== "I want to delete this deck"
-      )
-        throw new Error("Invalid delete request");
-      // Cards are deleted automatically via ON DELETE CASCADE
-      const { error } = await supabase
-        .from("decks")
-        .delete()
-        .eq("id", deckToDelete.id);
-      if (error)
-        await handleDbError(
-          error,
-          OperationType.DELETE,
-          `decks/${deckToDelete.id}`,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["decks", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      if (deckToDelete) {
-        queryClient.invalidateQueries({
-          queryKey: ["cards", deckToDelete.id, user?.id],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["studyCards", deckToDelete.id, user?.id],
-        });
-      }
-      setDeckToDelete(null);
-      setDeleteConfirmation("");
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  const renameDeckMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !deckToRename || !renameDeckName.trim())
-        throw new Error("Invalid rename request");
-      const { error } = await supabase
-        .from("decks")
-        .update({
-          name: renameDeckName.trim(),
-          description: renameDeckDesc.trim(),
-          new_cards_per_day: renameNewCardsPerDay,
-          max_reviews_per_day: renameMaxReviewsPerDay,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", deckToRename.id);
-      if (error)
-        await handleDbError(
-          error,
-          OperationType.UPDATE,
-          `decks/${deckToRename.id}`,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["decks", user?.id] });
-      setDeckToRename(null);
-      setRenameDeckName("");
-      setRenameDeckDesc("");
-      setRenameNewCardsPerDay(DEFAULT_NEW_CARDS_PER_DAY);
-      setRenameMaxReviewsPerDay(DEFAULT_MAX_REVIEWS_PER_DAY);
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  const addCardMutation = useMutation({
-    mutationFn: async () => {
-      if (
-        !user ||
-        !deckToAddCard ||
-        !newCardFront.trim() ||
-        !newCardBack.trim()
-      )
-        throw new Error("Missing data");
-      const { error } = await supabase.from("cards").insert({
-        deck_id: deckToAddCard.id,
-        user_id: user.id,
-        front: newCardFront.trim(),
-        back: newCardBack.trim(),
-      });
-      if (error) await handleDbError(error, OperationType.CREATE, "cards");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      if (deckToAddCard) {
-        queryClient.invalidateQueries({
-          queryKey: ["cards", deckToAddCard.id, user?.id],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["studyCards", deckToAddCard.id, user?.id],
-        });
-      }
-      setDeckToAddCard(null);
-      setNewCardFront("");
-      setNewCardBack("");
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
+  const createDeckMutation = useCreateDeck();
+  const deleteDeckMutation = useDeleteDeck();
+  const renameDeckMutation = useUpdateDeck();
+  const addCardMutation = useCreateCard();
 
   const getDeckStats = (deckId: string) => {
     const deckCards = cards.filter((c) => c.deck_id === deckId);
@@ -301,11 +121,31 @@ export default function Home() {
 
   const handleCreateDeck = (e: React.FormEvent) => {
     e.preventDefault();
-    createDeckMutation.mutate();
+    createDeckMutation.mutate(
+      { name: newDeckName, description: newDeckDesc },
+      {
+        onSuccess: (id) => {
+          setNewDeckName("");
+          setNewDeckDesc("");
+          setIsDialogOpen(false);
+          router.push(`/deck/${id}`);
+        },
+      },
+    );
   };
 
   const handleDeleteDeck = () => {
-    deleteDeckMutation.mutate();
+    if (!deckToDelete || deleteConfirmation !== "I want to delete this deck")
+      return;
+    deleteDeckMutation.mutate(
+      { id: deckToDelete.id },
+      {
+        onSuccess: () => {
+          setDeckToDelete(null);
+          setDeleteConfirmation("");
+        },
+      },
+    );
   };
 
   const handleSignIn = async () => {
@@ -459,7 +299,29 @@ export default function Home() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => renameDeckMutation.mutate()}
+                  onClick={() => {
+                    if (!deckToRename) return;
+                    renameDeckMutation.mutate(
+                      {
+                        id: deckToRename.id,
+                        name: renameDeckName,
+                        description: renameDeckDesc,
+                        new_cards_per_day: renameNewCardsPerDay,
+                        max_reviews_per_day: renameMaxReviewsPerDay,
+                      },
+                      {
+                        onSuccess: () => {
+                          setDeckToRename(null);
+                          setRenameDeckName("");
+                          setRenameDeckDesc("");
+                          setRenameNewCardsPerDay(DEFAULT_NEW_CARDS_PER_DAY);
+                          setRenameMaxReviewsPerDay(
+                            DEFAULT_MAX_REVIEWS_PER_DAY,
+                          );
+                        },
+                      },
+                    );
+                  }}
                   disabled={
                     !renameDeckName.trim() ||
                     (renameDeckName.trim() === deckToRename?.name &&
@@ -494,7 +356,21 @@ export default function Home() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  addCardMutation.mutate();
+                  if (!deckToAddCard) return;
+                  addCardMutation.mutate(
+                    {
+                      deckId: deckToAddCard.id,
+                      front: newCardFront,
+                      back: newCardBack,
+                    },
+                    {
+                      onSuccess: () => {
+                        setDeckToAddCard(null);
+                        setNewCardFront("");
+                        setNewCardBack("");
+                      },
+                    },
+                  );
                 }}
               >
                 <DialogHeader>

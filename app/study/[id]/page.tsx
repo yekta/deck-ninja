@@ -4,48 +4,30 @@ import { useAuth } from "@/components/auth-provider";
 import { NCardStudy } from "@/components/n-card-study";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { handleDbError, OperationType } from "@/lib/db-error";
+import { useDeck } from "@/hooks/data/use-decks";
+import { useRateCard } from "@/hooks/data/use-rate-card";
 import {
-  DEFAULT_MAX_REVIEWS_PER_DAY,
-  DEFAULT_NEW_CARDS_PER_DAY,
-} from "@/lib/constants";
+  useStudyCards,
+  type StudyFlashcard,
+} from "@/hooks/data/use-study-cards";
+import { useUserSettings } from "@/hooks/data/use-user-settings";
+import { useReviewTimer } from "@/hooks/use-review-timer";
 import {
   createUserScheduler,
   dbRowToFSRSCard,
   formatInterval,
-  fsrsCardToDbRow,
   Rating,
-  reviewLogToDbRow,
   SHORT_INTERVAL_MS,
   type Grade,
 } from "@/lib/fsrs";
-import { supabase } from "@/lib/supabase";
-import { useReviewTimer } from "@/hooks/use-review-timer";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
 import { BrushCleaningIcon, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-interface Flashcard {
-  id: string;
-  front: string;
-  back: string;
-  due: string;
-  stability: number;
-  difficulty: number;
-  elapsed_days: number;
-  scheduled_days: number;
-  reps: number;
-  lapses: number;
-  state: string;
-  learning_steps: number;
-  last_review: string | null;
-}
-
 interface QueueItem {
-  card: Flashcard;
+  card: StudyFlashcard;
   isRequeued: boolean;
   dueTime: number;
 }
@@ -54,144 +36,32 @@ export default function StudyPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { user, loading } = useAuth();
-  const queryClient = useQueryClient();
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [reviewedCount, setReviewedCount] = useState(0);
 
-  const { data: userSettings } = useQuery({
-    queryKey: ["userSettings", user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase
-        .from("user_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: userSettings } = useUserSettings();
 
   const userScheduler = useMemo(
     () => createUserScheduler(userSettings ?? null),
     [userSettings],
   );
 
-  const { data: deckData, isPending: isPendingDecks } = useQuery({
-    queryKey: ["deck", id],
-    queryFn: async () => {
-      if (!user || !id) return null;
-      const { data, error } = await supabase
-        .from("decks")
-        .select("name, new_cards_per_day, max_reviews_per_day")
-        .eq("id", id)
-        .single();
-      if (error || !data) {
-        router.push("/");
-        return null;
-      }
-      return data as {
-        name: string;
-        new_cards_per_day: number;
-        max_reviews_per_day: number;
-      };
-    },
-    enabled: !!user && !!id,
-  });
+  const { data: deckData, isPending: isPendingDecks } = useDeck(id);
+
+  // Redirect home if the deck doesn't exist.
+  useEffect(() => {
+    if (!isPendingDecks && user && id && deckData === null) {
+      router.push("/");
+    }
+  }, [isPendingDecks, deckData, user, id, router]);
 
   const deckName = deckData?.name ?? "Loading...";
 
-  const { data: studyData, isPending: isPendingCards } = useQuery({
-    queryKey: ["studyCards", id, user?.id, deckData?.new_cards_per_day, deckData?.max_reviews_per_day],
-    staleTime: 0,
-    gcTime: 0,
-    queryFn: async () => {
-      if (!user || !id) return { totalCards: 0, dueCards: [] };
-
-      const { count, error: countError } = await supabase
-        .from("cards")
-        .select("*", { count: "exact", head: true })
-        .eq("deck_id", id);
-
-      const soonCutoff = new Date(Date.now() + SHORT_INTERVAL_MS).toISOString();
-      const { data, error } = await supabase
-        .from("cards")
-        .select("*")
-        .eq("deck_id", id)
-        .lte("due", soonCutoff);
-
-      if (countError)
-        await handleDbError(countError, OperationType.GET, "cards");
-      if (error) await handleDbError(error, OperationType.GET, "cards");
-
-      const allDueCards = (data ?? []) as Flashcard[];
-
-      // Count today's reviews to enforce daily limits
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const cardIds = allDueCards.map((c) => c.id);
-      let newReviewedToday = 0;
-      let reviewReviewedToday = 0;
-
-      if (cardIds.length > 0) {
-        // Get all card IDs in this deck (not just due ones) for review log counting
-        const { data: allDeckCards } = await supabase
-          .from("cards")
-          .select("id")
-          .eq("deck_id", id);
-
-        const allDeckCardIds = (allDeckCards ?? []).map(
-          (c: { id: string }) => c.id,
-        );
-
-        if (allDeckCardIds.length > 0) {
-          const { data: todayLogs } = await supabase
-            .from("review_logs")
-            .select("card_id, state")
-            .in("card_id", allDeckCardIds)
-            .gte("review", startOfDay.toISOString());
-
-          if (todayLogs) {
-            const newCardIds = new Set<string>();
-            const reviewCardIds = new Set<string>();
-            for (const log of todayLogs) {
-              if (log.state === "new") newCardIds.add(log.card_id);
-              else if (log.state === "review") reviewCardIds.add(log.card_id);
-            }
-            newReviewedToday = newCardIds.size;
-            reviewReviewedToday = reviewCardIds.size;
-          }
-        }
-      }
-
-      // Partition cards by type
-      const newCards = allDueCards.filter((c) => c.state === "new");
-      const reviewCards = allDueCards.filter((c) => c.state === "review");
-      const learningCards = allDueCards.filter(
-        (c) => c.state === "learning" || c.state === "relearning",
-      );
-
-      // Apply daily limits
-      const newCardsPerDay = deckData?.new_cards_per_day ?? DEFAULT_NEW_CARDS_PER_DAY;
-      const maxReviewsPerDay = deckData?.max_reviews_per_day ?? DEFAULT_MAX_REVIEWS_PER_DAY;
-
-      const newLimit = Math.max(0, newCardsPerDay - newReviewedToday);
-      const reviewLimit = Math.max(0, maxReviewsPerDay - reviewReviewedToday);
-
-      const limitedNew = newCards.slice(0, newLimit);
-      const limitedReview = reviewCards.slice(0, reviewLimit);
-
-      // Learning cards are always shown (not limited)
-      const limitedCards = [...limitedNew, ...learningCards, ...limitedReview];
-      const shuffled = limitedCards.sort(() => Math.random() - 0.5);
-
-      return { totalCards: count ?? 0, dueCards: shuffled };
-    },
-    enabled: !!user && !!id && !!deckData,
-  });
+  const { data: studyData, isPending: isPendingCards } = useStudyCards(
+    id,
+    deckData,
+  );
 
   const isPending = isPendingDecks || isPendingCards;
   const totalCards = studyData?.totalCards || 0;
@@ -210,86 +80,7 @@ export default function StudyPage() {
     }
   }, [studyData]);
 
-  const rateCardMutation = useMutation({
-    mutationFn: async ({
-      rating,
-      currentCard,
-      durationMs,
-    }: {
-      rating: Grade;
-      currentCard: Flashcard;
-      durationMs: number;
-    }) => {
-      const fsrsCard = dbRowToFSRSCard(currentCard);
-      const now = new Date();
-      const result = userScheduler.next(fsrsCard, now, rating);
-      const dbFields = fsrsCardToDbRow(result.card);
-
-      const [cardResult, logResult] = await Promise.all([
-        supabase
-          .from("cards")
-          .update({
-            ...dbFields,
-            updated_at: now.toISOString(),
-          })
-          .eq("id", currentCard.id),
-        supabase
-          .from("review_logs")
-          .insert(reviewLogToDbRow(result.log, currentCard.id, durationMs)),
-      ]);
-      if (cardResult.error)
-        await handleDbError(
-          cardResult.error,
-          OperationType.UPDATE,
-          `cards/${currentCard.id}`,
-        );
-      if (logResult.error)
-        await handleDbError(
-          logResult.error,
-          OperationType.CREATE,
-          "review_logs",
-        );
-
-      return { result, dbFields, now };
-    },
-    onSuccess: ({ result, dbFields, now }, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-
-      const newDueMs = result.card.due.getTime();
-      const intervalMs = newDueMs - now.getTime();
-
-      setQueue((prev) => {
-        const [current, ...rest] = prev;
-        if (!current) return prev;
-
-        if (intervalMs < SHORT_INTERVAL_MS) {
-          const updatedCard: Flashcard = {
-            ...current.card,
-            ...dbFields,
-          };
-          const requeued: QueueItem = {
-            card: updatedCard,
-            isRequeued: true,
-            dueTime: newDueMs,
-          };
-          const firstPass = rest.filter((item) => !item.isRequeued);
-          const requeuedItems = [
-            ...rest.filter((item) => item.isRequeued),
-            requeued,
-          ].sort((a, b) => a.dueTime - b.dueTime);
-          return [...firstPass, ...requeuedItems];
-        }
-
-        return rest;
-      });
-
-      setReviewedCount((prev) => prev + 1);
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
+  const rateCardMutation = useRateCard(userScheduler, id);
 
   const currentCard = queue[0]?.card ?? null;
   const { getElapsedMs } = useReviewTimer(currentCard?.id ?? null);
@@ -303,7 +94,42 @@ export default function StudyPage() {
   const handleRate = (rating: Grade) => {
     if (!user || !currentCard) return;
     const durationMs = getElapsedMs();
-    rateCardMutation.mutate({ rating, currentCard, durationMs });
+    rateCardMutation.mutate(
+      { rating, currentCard, durationMs },
+      {
+        onSuccess: ({ result, dbFields, now }) => {
+          const newDueMs = result.card.due.getTime();
+          const intervalMs = newDueMs - now.getTime();
+
+          setQueue((prev) => {
+            const [current, ...rest] = prev;
+            if (!current) return prev;
+
+            if (intervalMs < SHORT_INTERVAL_MS) {
+              const updatedCard: StudyFlashcard = {
+                ...current.card,
+                ...dbFields,
+              };
+              const requeued: QueueItem = {
+                card: updatedCard,
+                isRequeued: true,
+                dueTime: newDueMs,
+              };
+              const firstPass = rest.filter((item) => !item.isRequeued);
+              const requeuedItems = [
+                ...rest.filter((item) => item.isRequeued),
+                requeued,
+              ].sort((a, b) => a.dueTime - b.dueTime);
+              return [...firstPass, ...requeuedItems];
+            }
+
+            return rest;
+          });
+
+          setReviewedCount((prev) => prev + 1);
+        },
+      },
+    );
   };
 
   const previewLabels = currentCard

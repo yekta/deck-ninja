@@ -15,26 +15,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/lib/supabase";
-import { handleDbError, OperationType } from "@/lib/db-error";
+import {
+  useCardsByDeck,
+  useCreateCard,
+  useDeleteCard,
+  useUpdateCard,
+  type Flashcard,
+} from "@/hooks/data/use-cards";
+import { useDeck } from "@/hooks/data/use-decks";
 import { cn } from "@/lib/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-
-interface Flashcard {
-  id: string;
-  front: string;
-  back: string;
-}
+import { useEffect, useState } from "react";
 
 export default function DeckPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { user, loading } = useAuth();
-  const queryClient = useQueryClient();
 
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
@@ -44,140 +42,64 @@ export default function DeckPage() {
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
 
-  const { data: deckData, isPending: isPendingDecks } = useQuery({
-    queryKey: ["deck", id],
-    queryFn: async () => {
-      if (!user || !id) return null;
-      const { data, error } = await supabase
-        .from("decks")
-        .select("name, new_cards_per_day, max_reviews_per_day")
-        .eq("id", id)
-        .single();
-      if (error || !data) {
-        router.push("/");
-        return null;
-      }
-      return data as {
-        name: string;
-        new_cards_per_day: number;
-        max_reviews_per_day: number;
-      };
-    },
-    enabled: !!user && !!id,
-  });
+  const { data: deckData, isPending: isPendingDecks } = useDeck(id);
+  const { data: cards = [], isPending: isPendingCards } = useCardsByDeck(id);
+
+  // Redirect home if the deck doesn't exist (or was deleted).
+  useEffect(() => {
+    if (!isPendingDecks && user && id && deckData === null) {
+      router.push("/");
+    }
+  }, [isPendingDecks, deckData, user, id, router]);
 
   const deckName = deckData?.name ?? "Loading...";
 
-  const { data: cards = [], isPending: isPendingCards } = useQuery({
-    queryKey: ["cards", id, user?.id],
-    queryFn: async () => {
-      if (!user || !id) return [];
-      const { data, error } = await supabase
-        .from("cards")
-        .select("*")
-        .eq("deck_id", id);
-      if (error) await handleDbError(error, OperationType.GET, "cards");
-      return (data ?? []) as Flashcard[];
-    },
-    enabled: !!user && !!id,
-  });
-
   const isPending = isPendingDecks || isPendingCards;
 
-  const addCardMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !newFront.trim() || !newBack.trim())
-        throw new Error("Missing data");
-      const { error } = await supabase.from("cards").insert({
-        deck_id: id,
-        user_id: user.id,
-        front: newFront.trim(),
-        back: newBack.trim(),
-      });
-      if (error) await handleDbError(error, OperationType.CREATE, "cards");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["studyCards", id, user?.id] });
-      setNewFront("");
-      setNewBack("");
-      setIsDialogOpen(false);
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  const deleteCardMutation = useMutation({
-    mutationFn: async () => {
-      if (!cardToDelete) throw new Error("No card to delete");
-      const { error } = await supabase
-        .from("cards")
-        .delete()
-        .eq("id", cardToDelete);
-      if (error)
-        await handleDbError(
-          error,
-          OperationType.DELETE,
-          `cards/${cardToDelete}`,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["studyCards", id, user?.id] });
-      setCardToDelete(null);
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  const editCardMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !cardToEdit || !editFront.trim() || !editBack.trim())
-        throw new Error("Missing data");
-      const { error } = await supabase
-        .from("cards")
-        .update({
-          front: editFront.trim(),
-          back: editBack.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", cardToEdit.id);
-      if (error)
-        await handleDbError(
-          error,
-          OperationType.UPDATE,
-          `cards/${cardToEdit.id}`,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", id, user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["cards", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["studyCards", id, user?.id] });
-      setCardToEdit(null);
-      setEditFront("");
-      setEditBack("");
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
+  const addCardMutation = useCreateCard();
+  const deleteCardMutation = useDeleteCard();
+  const editCardMutation = useUpdateCard();
 
   const handleAddCard = (e: React.FormEvent) => {
     e.preventDefault();
-    addCardMutation.mutate();
+    addCardMutation.mutate(
+      { deckId: id, front: newFront, back: newBack },
+      {
+        onSuccess: () => {
+          setNewFront("");
+          setNewBack("");
+          setIsDialogOpen(false);
+        },
+      },
+    );
   };
 
   const handleDeleteCard = () => {
-    deleteCardMutation.mutate();
+    if (!cardToDelete) return;
+    deleteCardMutation.mutate(
+      { id: cardToDelete, deckId: id },
+      { onSuccess: () => setCardToDelete(null) },
+    );
   };
 
   const handleEditCard = (e: React.FormEvent) => {
     e.preventDefault();
-    editCardMutation.mutate();
+    if (!cardToEdit) return;
+    editCardMutation.mutate(
+      {
+        id: cardToEdit.id,
+        deckId: id,
+        front: editFront,
+        back: editBack,
+      },
+      {
+        onSuccess: () => {
+          setCardToEdit(null);
+          setEditFront("");
+          setEditBack("");
+        },
+      },
+    );
   };
 
   if (!loading && !user) return null;
