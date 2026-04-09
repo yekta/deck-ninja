@@ -23,10 +23,11 @@ import { handleDbError, OperationType } from "@/lib/db-error";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrainCircuit, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import Logo from "@/components/icons/logo";
 import { Navbar } from "@/components/navbar";
 
 interface Deck {
@@ -320,7 +321,7 @@ export default function Home() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="max-w-md text-center space-y-6">
-          <BrainCircuit className="mx-auto h-16 w-16 text-brand" />
+          <Logo className="mx-auto size-16" />
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
             DeckNinja
           </h1>
@@ -331,7 +332,7 @@ export default function Home() {
           <Button
             size="lg"
             onClick={handleSignIn}
-            className="w-full"
+            className="w-full max-w-64"
             isPending={isSigningIn}
           >
             Sign in with Google

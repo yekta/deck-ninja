@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
-import { Button } from "@/components/ui/button";
-import { BrainCircuit, LogOut, ArrowLeft } from "lucide-react";
+import Logo from "@/components/icons/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Logo from "@/components/icons/logo";
+import { ArrowLeft, LogOut } from "lucide-react";
+import Link from "next/link";
 
 interface NavbarProps {
   backHref?: string;
