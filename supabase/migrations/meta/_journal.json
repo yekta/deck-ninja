@@ -15,6 +15,13 @@
       "when": 1775704522698,
       "tag": "0001_living_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775748374288,
+      "tag": "0002_mighty_tigra",
+      "breakpoints": true
     }
   ]
 }

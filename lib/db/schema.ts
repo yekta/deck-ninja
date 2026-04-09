@@ -139,6 +139,7 @@ export const reviewLogs = pgTable(
     scheduledDays: integer("scheduled_days").notNull(),
     learningSteps: integer("learning_steps").notNull(),
     review: timestamp("review", { withTimezone: true }).notNull(),
+    durationMs: integer("duration_ms").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

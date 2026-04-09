@@ -33,7 +33,11 @@ export function createUserScheduler(
   });
 }
 
-export function reviewLogToDbRow(log: FSRSReviewLog, cardId: string) {
+export function reviewLogToDbRow(
+  log: FSRSReviewLog,
+  cardId: string,
+  durationMs: number,
+) {
   return {
     card_id: cardId,
     rating: log.rating as number,
@@ -44,6 +48,7 @@ export function reviewLogToDbRow(log: FSRSReviewLog, cardId: string) {
     scheduled_days: log.scheduled_days,
     learning_steps: log.learning_steps,
     review: new Date(log.review).toISOString(),
+    duration_ms: durationMs,
   };
 }
 

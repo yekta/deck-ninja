@@ -20,6 +20,7 @@ import {
   type Grade,
 } from "@/lib/fsrs";
 import { supabase } from "@/lib/supabase";
+import { useReviewTimer } from "@/hooks/use-review-timer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
 import { BrushCleaningIcon, CheckCircle2 } from "lucide-react";
@@ -213,9 +214,11 @@ export default function StudyPage() {
     mutationFn: async ({
       rating,
       currentCard,
+      durationMs,
     }: {
       rating: Grade;
       currentCard: Flashcard;
+      durationMs: number;
     }) => {
       const fsrsCard = dbRowToFSRSCard(currentCard);
       const now = new Date();
@@ -232,7 +235,7 @@ export default function StudyPage() {
           .eq("id", currentCard.id),
         supabase
           .from("review_logs")
-          .insert(reviewLogToDbRow(result.log, currentCard.id)),
+          .insert(reviewLogToDbRow(result.log, currentCard.id, durationMs)),
       ]);
       if (cardResult.error)
         await handleDbError(
@@ -289,6 +292,7 @@ export default function StudyPage() {
   });
 
   const currentCard = queue[0]?.card ?? null;
+  const { getElapsedMs } = useReviewTimer(currentCard?.id ?? null);
   const isFinished = queue.length === 0 && reviewedCount > 0;
   const hasNoDueCards =
     !isPending &&
@@ -298,7 +302,8 @@ export default function StudyPage() {
 
   const handleRate = (rating: Grade) => {
     if (!user || !currentCard) return;
-    rateCardMutation.mutate({ rating, currentCard });
+    const durationMs = getElapsedMs();
+    rateCardMutation.mutate({ rating, currentCard, durationMs });
   };
 
   const previewLabels = currentCard
