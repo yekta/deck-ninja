@@ -39,6 +39,7 @@ import { z } from "zod";
 import Logo from "@/components/icons/logo";
 import { Navbar } from "@/components/navbar";
 import { formatDuration, intervalToDuration } from "date-fns";
+import SignInForm from "@/components/sign-in-form";
 
 const DELETE_DECK_CONFIRMATION = "I want to delete this deck";
 
@@ -143,28 +144,7 @@ export default function Home() {
   };
 
   if (!loading && !user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="max-w-md text-center space-y-6">
-          <Logo className="mx-auto size-16" />
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            DeckNinja
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Master any subject with spaced repetition. Sign in to start
-            learning.
-          </p>
-          <Button
-            size="lg"
-            onClick={handleSignIn}
-            className="w-full max-w-64"
-            isPending={isSigningIn}
-          >
-            Sign in with Google
-          </Button>
-        </div>
-      </div>
-    );
+    return <SignInForm />;
   }
 
   const showPlaceholder = loading || isPending;
