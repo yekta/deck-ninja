@@ -29,21 +29,6 @@ SELECT
   USING (auth.uid () = user_id);
 
 
-CREATE POLICY "Users can insert own settings" ON user_settings FOR INSERT
-WITH
-  CHECK (
-    auth.uid () = user_id
-    AND NOT EXISTS (
-      SELECT
-        1
-      FROM
-        user_settings
-      WHERE
-        user_id = auth.uid ()
-    )
-  );
-
-
 CREATE POLICY "Users can update own settings" ON user_settings
 FOR UPDATE
   USING (auth.uid () = user_id)

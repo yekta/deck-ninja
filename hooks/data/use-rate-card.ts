@@ -28,9 +28,20 @@ export type TRateCardVariables = {
  * update + review log insert) and cache invalidation. Queue-management side
  * effects should live in the caller via `mutate(vars, { onSuccess })`.
  */
-export function useRateCard(scheduler: FSRS, deckId: string | undefined) {
+export function useRateCard(
+  scheduler: FSRS | null,
+  deckId: string | undefined,
+) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  if (!scheduler) {
+    return {
+      mutate: () => Promise.resolve(),
+      isPending: true,
+      variables: null,
+    };
+  }
+
   return useMutation({
     mutationFn: async ({
       rating,

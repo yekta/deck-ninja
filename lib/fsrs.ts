@@ -1,3 +1,4 @@
+import { TUserSettings } from "@/lib/db/schema";
 import {
   fsrs,
   createEmptyCard,
@@ -7,30 +8,65 @@ import {
   type Grade,
   type FSRS,
   type ReviewLog as FSRSReviewLog,
+  type StepUnit,
+  type FSRSParameters,
 } from "ts-fsrs";
 
 export { Rating, State, createEmptyCard };
-export type { FSRSCard, Grade, FSRS };
+export type { FSRSCard, Grade, FSRS, FSRSParameters };
 
 export const scheduler = fsrs();
 
-export function createUserScheduler(
-  settings: {
-    request_retention?: number;
-    maximum_interval?: number;
-    w?: number[] | null;
-    enable_fuzz?: boolean;
-    enable_short_term?: boolean;
-  } | null,
-): FSRS {
-  if (!settings) return fsrs();
-  return fsrs({
-    request_retention: settings.request_retention ?? 0.9,
-    maximum_interval: settings.maximum_interval ?? 36500,
-    w: settings.w ?? undefined,
-    enable_fuzz: settings.enable_fuzz ?? true,
-    enable_short_term: settings.enable_short_term ?? true,
-  });
+export const FSRS_DEFAULT_REQUEST_RETENTION = 0.9;
+export const FSRS_DEFAULT_MAXIMUM_INTERVAL = 36500;
+export const FSRS_DEFAULT_ENABLE_FUZZ = false;
+export const FSRS_DEFAULT_ENABLE_SHORT_TERM = true;
+export const FSRS_DEFAULT_LEARNING_STEPS: readonly StepUnit[] = Object.freeze([
+  "1m",
+  "10m",
+]); // New->Learning,Learning->Learning
+
+export const FSRS_DEFAULT_RELEARNING_STEPS: readonly StepUnit[] = Object.freeze(
+  ["10m"],
+); // Relearning->Relearning
+
+export const FSRS_DEFAULT_DECAY = 0.1542;
+
+export const FSRS_DEFAULT_W = Object.freeze([
+  0.212,
+  1.2931,
+  2.3065,
+  8.2956,
+  6.4133,
+  0.8334,
+  3.0194,
+  0.001,
+  1.8722,
+  0.1666,
+  0.796,
+  1.4835,
+  0.0614,
+  0.2629,
+  1.6483,
+  0.6014,
+  1.8729,
+  0.5425,
+  0.0912,
+  0.0658,
+  FSRS_DEFAULT_DECAY,
+]);
+
+export function createUserScheduler(params: TUserSettings): FSRS {
+  const fsrsParams: FSRSParameters = {
+    request_retention: params.requestRetention,
+    maximum_interval: params.maximumInterval,
+    enable_fuzz: params.enableFuzz,
+    enable_short_term: params.enableShortTerm,
+    learning_steps: params.learningSteps as StepUnit[],
+    relearning_steps: params.relearningSteps as StepUnit[],
+    w: params.w,
+  };
+  return fsrs(fsrsParams);
 }
 
 export function reviewLogToDbRow(
@@ -97,7 +133,6 @@ export function fsrsCardToDbRow(card: FSRSCard) {
     due: card.due.toISOString(),
     stability: card.stability,
     difficulty: card.difficulty,
-    elapsed_days: card.elapsed_days,
     scheduled_days: card.scheduled_days,
     reps: card.reps,
     lapses: card.lapses,

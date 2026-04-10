@@ -39,10 +39,10 @@ export default function StudyPage() {
 
   const { data: userSettings } = useUserSettings();
 
-  const userScheduler = useMemo(
-    () => createUserScheduler(userSettings ?? null),
-    [userSettings],
-  );
+  const userScheduler = useMemo(() => {
+    if (!userSettings) return null;
+    return createUserScheduler(userSettings);
+  }, [userSettings]);
 
   const { data: deckData, isPending: isPendingDecks } = useDeck(id);
 
@@ -129,19 +129,20 @@ export default function StudyPage() {
     );
   };
 
-  const previewLabels = currentCard
-    ? (() => {
-        const fsrsCard = dbRowToFSRSCard(currentCard);
-        const now = new Date();
-        const preview = userScheduler.repeat(fsrsCard, now);
-        return {
-          againLabel: formatInterval(preview[Rating.Again].card.due, now),
-          hardLabel: formatInterval(preview[Rating.Hard].card.due, now),
-          goodLabel: formatInterval(preview[Rating.Good].card.due, now),
-          easyLabel: formatInterval(preview[Rating.Easy].card.due, now),
-        };
-      })()
-    : null;
+  const previewLabels =
+    currentCard && userScheduler
+      ? (() => {
+          const fsrsCard = dbRowToFSRSCard(currentCard);
+          const now = new Date();
+          const preview = userScheduler.repeat(fsrsCard, now);
+          return {
+            againLabel: formatInterval(preview[Rating.Again].card.due, now),
+            hardLabel: formatInterval(preview[Rating.Hard].card.due, now),
+            goodLabel: formatInterval(preview[Rating.Good].card.due, now),
+            easyLabel: formatInterval(preview[Rating.Easy].card.due, now),
+          };
+        })()
+      : null;
 
   useEffect(() => {
     if (isFinished) {

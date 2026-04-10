@@ -14,6 +14,15 @@ import {
   DEFAULT_MAX_REVIEWS_PER_DAY,
   DEFAULT_NEW_CARDS_PER_DAY,
 } from "@/lib/constants";
+import {
+  FSRS_DEFAULT_ENABLE_FUZZ,
+  FSRS_DEFAULT_ENABLE_SHORT_TERM,
+  FSRS_DEFAULT_LEARNING_STEPS,
+  FSRS_DEFAULT_MAXIMUM_INTERVAL,
+  FSRS_DEFAULT_RELEARNING_STEPS,
+  FSRS_DEFAULT_REQUEST_RETENTION,
+  FSRS_DEFAULT_W,
+} from "@/lib/fsrs";
 
 export const cardStateEnum = pgEnum("card_state", [
   "new",
@@ -96,13 +105,7 @@ export const cards = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [
-    index("cards_deck_id_user_id_due_idx").on(
-      t.deckId,
-      t.userId,
-      t.due,
-    ),
-  ],
+  (t) => [index("cards_deck_id_user_id_due_idx").on(t.deckId, t.userId, t.due)],
 );
 
 export const userSettings = pgTable("user_settings", {
@@ -111,11 +114,30 @@ export const userSettings = pgTable("user_settings", {
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
-  requestRetention: real("request_retention").notNull().default(0.9),
-  maximumInterval: integer("maximum_interval").notNull().default(36500),
-  w: real("w").array(),
-  enableFuzz: boolean("enable_fuzz").notNull().default(true),
-  enableShortTerm: boolean("enable_short_term").notNull().default(true),
+  requestRetention: real("request_retention")
+    .notNull()
+    .default(FSRS_DEFAULT_REQUEST_RETENTION),
+  maximumInterval: integer("maximum_interval")
+    .notNull()
+    .default(FSRS_DEFAULT_MAXIMUM_INTERVAL),
+  w: real("w")
+    .array()
+    .notNull()
+    .default(FSRS_DEFAULT_W as number[]),
+  enableFuzz: boolean("enable_fuzz")
+    .notNull()
+    .default(FSRS_DEFAULT_ENABLE_FUZZ),
+  enableShortTerm: boolean("enable_short_term")
+    .notNull()
+    .default(FSRS_DEFAULT_ENABLE_SHORT_TERM),
+  learningSteps: text("learning_steps")
+    .array()
+    .notNull()
+    .default(FSRS_DEFAULT_LEARNING_STEPS as string[]),
+  relearningSteps: text("relearning_steps")
+    .array()
+    .notNull()
+    .default(FSRS_DEFAULT_RELEARNING_STEPS as string[]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

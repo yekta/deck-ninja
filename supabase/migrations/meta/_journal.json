@@ -22,6 +22,13 @@
       "when": 1775748374288,
       "tag": "0002_mighty_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775863221913,
+      "tag": "0003_charming_robbie_robertson",
+      "breakpoints": true
     }
   ]
 }
