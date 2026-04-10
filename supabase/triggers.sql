@@ -39,3 +39,34 @@ CREATE TRIGGER on_auth_user_deleted
   AFTER DELETE ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_user_deleted ();
+
+
+-- Auto-update updated_at on row modification
+CREATE OR REPLACE FUNCTION public.set_updated_at ()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON public."users"
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at ();
+
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON public."decks"
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at ();
+
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON public."cards"
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at ();
+
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON public."user_settings"
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at ();

@@ -138,6 +138,9 @@ export const userSettings = pgTable("user_settings", {
     .array()
     .notNull()
     .default(FSRS_DEFAULT_RELEARNING_STEPS as string[]),
+  lastCalibratedAt: timestamp("last_calibrated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

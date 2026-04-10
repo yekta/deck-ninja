@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "last_calibrated_at" timestamp with time zone DEFAULT now() NOT NULL;
