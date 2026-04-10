@@ -34,13 +34,6 @@ export function useRateCard(
 ) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  if (!scheduler) {
-    return {
-      mutate: () => Promise.resolve(),
-      isPending: true,
-      variables: null,
-    };
-  }
 
   return useMutation({
     mutationFn: async ({
@@ -48,6 +41,7 @@ export function useRateCard(
       currentCard,
       durationMs,
     }: TRateCardVariables) => {
+      if (!scheduler) throw new Error("Scheduler not ready");
       const fsrsCard = dbRowToFSRSCard(currentCard);
       const now = new Date();
       const result = scheduler.next(fsrsCard, now, rating);

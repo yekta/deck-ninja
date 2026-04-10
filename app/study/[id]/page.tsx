@@ -37,7 +37,8 @@ export default function StudyPage() {
   const [queue, setQueue] = useState<TQueueItem[]>([]);
   const [reviewedCount, setReviewedCount] = useState(0);
 
-  const { data: userSettings } = useUserSettings();
+  const { data: userSettings, isPending: isPendingSettings } =
+    useUserSettings();
 
   const userScheduler = useMemo(() => {
     if (!userSettings) return null;
@@ -60,7 +61,7 @@ export default function StudyPage() {
     deckData,
   );
 
-  const isPending = isPendingDecks || isPendingCards;
+  const isPending = isPendingDecks || isPendingCards || isPendingSettings;
   const totalCards = studyData?.totalCards || 0;
 
   // Initialize queue from fetched data

@@ -15,8 +15,6 @@ import {
 export { Rating, State, createEmptyCard };
 export type { FSRSCard, Grade, FSRS, FSRSParameters };
 
-export const scheduler = fsrs();
-
 export const FSRS_DEFAULT_REQUEST_RETENTION = 0.9;
 export const FSRS_DEFAULT_MAXIMUM_INTERVAL = 36500;
 export const FSRS_DEFAULT_ENABLE_FUZZ = false;
