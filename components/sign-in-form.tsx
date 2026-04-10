@@ -4,7 +4,8 @@ import { useAuth } from "@/components/auth-provider";
 import Logo from "@/components/icons/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type TProps = {
   className?: string;
@@ -12,7 +13,12 @@ type TProps = {
 
 export default function SignInForm({ className }: TProps) {
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) router.push("/");
+  }, [user]);
 
   const handleSignIn = async () => {
     setIsSigningIn(true);

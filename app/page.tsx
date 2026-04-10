@@ -36,10 +36,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 
-import Logo from "@/components/icons/logo";
 import { Navbar } from "@/components/navbar";
-import { formatDuration, intervalToDuration } from "date-fns";
 import SignInForm from "@/components/sign-in-form";
+import { formatDuration, intervalToDuration } from "date-fns";
 
 const DELETE_DECK_CONFIRMATION = "I want to delete this deck";
 
@@ -230,7 +229,9 @@ export default function Home() {
                 />
               }
             >
-              <Plus className={cn("size-5", showPlaceholder && "opacity-0")} />
+              <Plus
+                className={cn("size-5 -ml-1.5", showPlaceholder && "opacity-0")}
+              />
               Create Deck
             </DialogTrigger>
             <DialogContent>
@@ -763,7 +764,7 @@ function DecksSection({
           Create your first deck to start adding cards.
         </p>
         <Button onClick={onCreateDeck}>
-          <Plus className="size-5" />
+          <Plus className="size-5 -ml-1.5" />
           Create Deck
         </Button>
       </div>

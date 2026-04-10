@@ -110,7 +110,7 @@ export function Navbar({ backHref, title, rightActions }: TNavbarProps) {
                 render={
                   <Button
                     variant="ghost"
-                    className="relative h-8 w-8 rounded-full border-[2px] border-border hover:border-foreground/50 active:border-foreground/50"
+                    className="relative size-8 p-0 rounded-full border-[2px] border-border hover:border-foreground/50 active:border-foreground/50"
                   />
                 }
               >

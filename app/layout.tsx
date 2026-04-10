@@ -2,12 +2,12 @@ import { AuthProvider } from "@/components/auth-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NowProvider } from "@/components/now-provider";
 import { Providers } from "@/components/query-provider";
+import { DEFAULT_THEME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Geist } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
-import { DEFAULT_THEME } from "@/lib/constants";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "A flashcard app using spaced repetition algorithm with Firebase authentication.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
