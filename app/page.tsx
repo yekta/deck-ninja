@@ -30,36 +30,53 @@ import {
   DEFAULT_NEW_CARDS_PER_DAY,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { z } from "zod";
 
 import Logo from "@/components/icons/logo";
 import { Navbar } from "@/components/navbar";
 import { formatDuration, intervalToDuration } from "date-fns";
+
+const DELETE_DECK_CONFIRMATION = "I want to delete this deck";
+
+const createDeckSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  description: z.string().trim(),
+});
+
+const deckSettingsSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  description: z.string().trim(),
+  new_cards_per_day: z.number().int().min(0),
+  max_reviews_per_day: z.number().int().min(0),
+});
+
+const addCardSchema = z.object({
+  front: z.string().trim().min(1, "Front is required"),
+  back: z.string().trim().min(1, "Back is required"),
+});
+
+const deleteDeckSchema = z.object({
+  confirmation: z
+    .string()
+    .refine(
+      (v) => v === DELETE_DECK_CONFIRMATION,
+      "Confirmation text does not match",
+    ),
+});
 
 export default function Home() {
   const router = useRouter();
   const { user, loading, signInWithGoogle } = useAuth();
   const nowTime = useNow();
 
-  const [newDeckName, setNewDeckName] = useState("");
-  const [newDeckDesc, setNewDeckDesc] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDeckOpen, setIsCreateDeckOpen] = useState(false);
   const [deckToDelete, setDeckToDelete] = useState<TDeck | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deckToRename, setDeckToRename] = useState<TDeck | null>(null);
-  const [renameDeckName, setRenameDeckName] = useState("");
-  const [renameDeckDesc, setRenameDeckDesc] = useState("");
-  const [renameNewCardsPerDay, setRenameNewCardsPerDay] = useState(
-    DEFAULT_NEW_CARDS_PER_DAY,
-  );
-  const [renameMaxReviewsPerDay, setRenameMaxReviewsPerDay] = useState(
-    DEFAULT_MAX_REVIEWS_PER_DAY,
-  );
   const [deckToAddCard, setDeckToAddCard] = useState<TDeck | null>(null);
-  const [newCardFront, setNewCardFront] = useState("");
-  const [newCardBack, setNewCardBack] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const { data: decks = [], isPending: isPendingDecks } = useDecks();
@@ -67,11 +84,6 @@ export default function Home() {
   const { data: todayReviewLogs = [] } = useTodayReviewLogs();
 
   const isPending = isPendingDecks || isPendingCards;
-
-  const createDeckMutation = useCreateDeck();
-  const deleteDeckMutation = useDeleteDeck();
-  const renameDeckMutation = useUpdateDeck();
-  const addCardMutation = useCreateCard();
 
   const getDeckStats = (deckId: string) => {
     const deckCards = cards.filter((c) => c.deck_id === deckId);
@@ -119,35 +131,6 @@ export default function Home() {
       due: Math.min(totalDueCards, reviewLimit),
       latestCardCreatedAt,
     };
-  };
-
-  const handleCreateDeck = (e: React.FormEvent) => {
-    e.preventDefault();
-    createDeckMutation.mutate(
-      { name: newDeckName, description: newDeckDesc },
-      {
-        onSuccess: (id) => {
-          setNewDeckName("");
-          setNewDeckDesc("");
-          setIsDialogOpen(false);
-          router.push(`/deck/${id}`);
-        },
-      },
-    );
-  };
-
-  const handleDeleteDeck = () => {
-    if (!deckToDelete || deleteConfirmation !== "I want to delete this deck")
-      return;
-    deleteDeckMutation.mutate(
-      { id: deckToDelete.id },
-      {
-        onSuccess: () => {
-          setDeckToDelete(null);
-          setDeleteConfirmation("");
-        },
-      },
-    );
   };
 
   const handleSignIn = async () => {
@@ -210,266 +193,52 @@ export default function Home() {
           <Dialog
             open={deckToRename !== null}
             onOpenChange={(open) => {
-              if (!open) {
-                setDeckToRename(null);
-                setRenameDeckName("");
-                setRenameDeckDesc("");
-                setRenameNewCardsPerDay(DEFAULT_NEW_CARDS_PER_DAY);
-                setRenameMaxReviewsPerDay(DEFAULT_MAX_REVIEWS_PER_DAY);
-              }
+              if (!open) setDeckToRename(null);
             }}
           >
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Settings</DialogTitle>
-                <DialogDescription>
-                  Update the name, description, or daily limits for this deck.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rename-deck">Name</Label>
-                  <Input
-                    id="rename-deck"
-                    value={renameDeckName}
-                    onChange={(e) => setRenameDeckName(e.target.value)}
-                    placeholder="Deck Name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rename-deck-desc">
-                    Description (optional)
-                  </Label>
-                  <Input
-                    id="rename-deck-desc"
-                    value={renameDeckDesc}
-                    onChange={(e) => setRenameDeckDesc(e.target.value)}
-                    placeholder="e.g. Words from chapter 1-5"
-                  />
-                </div>
-                <div className="border-t pt-4 space-y-4">
-                  <p className="text-sm font-medium">Daily Limits</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-cards-per-day">New cards/day</Label>
-                    <Input
-                      id="new-cards-per-day"
-                      type="number"
-                      min={0}
-                      value={renameNewCardsPerDay}
-                      onChange={(e) =>
-                        setRenameNewCardsPerDay(
-                          Math.max(0, parseInt(e.target.value) || 0),
-                        )
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      The maximum number of new cards to introduce in a day.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-reviews-per-day">
-                      Maximum reviews/day
-                    </Label>
-                    <Input
-                      id="max-reviews-per-day"
-                      type="number"
-                      min={0}
-                      value={renameMaxReviewsPerDay}
-                      onChange={(e) =>
-                        setRenameMaxReviewsPerDay(
-                          Math.max(0, parseInt(e.target.value) || 0),
-                        )
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      The maximum number of review cards to show in a day.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setDeckToRename(null);
-                    setRenameDeckName("");
-                    setRenameDeckDesc("");
-                    setRenameNewCardsPerDay(DEFAULT_NEW_CARDS_PER_DAY);
-                    setRenameMaxReviewsPerDay(DEFAULT_MAX_REVIEWS_PER_DAY);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (!deckToRename) return;
-                    renameDeckMutation.mutate(
-                      {
-                        id: deckToRename.id,
-                        name: renameDeckName,
-                        description: renameDeckDesc,
-                        new_cards_per_day: renameNewCardsPerDay,
-                        max_reviews_per_day: renameMaxReviewsPerDay,
-                      },
-                      {
-                        onSuccess: () => {
-                          setDeckToRename(null);
-                          setRenameDeckName("");
-                          setRenameDeckDesc("");
-                          setRenameNewCardsPerDay(DEFAULT_NEW_CARDS_PER_DAY);
-                          setRenameMaxReviewsPerDay(
-                            DEFAULT_MAX_REVIEWS_PER_DAY,
-                          );
-                        },
-                      },
-                    );
-                  }}
-                  disabled={
-                    !renameDeckName.trim() ||
-                    (renameDeckName.trim() === deckToRename?.name &&
-                      renameDeckDesc.trim() ===
-                        (deckToRename?.description ?? "") &&
-                      renameNewCardsPerDay ===
-                        (deckToRename?.new_cards_per_day ??
-                          DEFAULT_NEW_CARDS_PER_DAY) &&
-                      renameMaxReviewsPerDay ===
-                        (deckToRename?.max_reviews_per_day ??
-                          DEFAULT_MAX_REVIEWS_PER_DAY))
-                  }
-                  isPending={renameDeckMutation.isPending}
-                >
-                  Save
-                </Button>
-              </DialogFooter>
+              {deckToRename && (
+                <DeckSettingsForm
+                  deck={deckToRename}
+                  onDone={() => setDeckToRename(null)}
+                />
+              )}
             </DialogContent>
           </Dialog>
 
           <Dialog
             open={deckToAddCard !== null}
             onOpenChange={(open) => {
-              if (!open) {
-                setDeckToAddCard(null);
-                setNewCardFront("");
-                setNewCardBack("");
-              }
+              if (!open) setDeckToAddCard(null);
             }}
           >
             <DialogContent>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!deckToAddCard) return;
-                  addCardMutation.mutate(
-                    {
-                      deckId: deckToAddCard.id,
-                      front: newCardFront,
-                      back: newCardBack,
-                    },
-                    {
-                      onSuccess: () => {
-                        setDeckToAddCard(null);
-                        setNewCardFront("");
-                        setNewCardBack("");
-                      },
-                    },
-                  );
-                }}
-              >
-                <DialogHeader>
-                  <DialogTitle>Add card to {deckToAddCard?.name}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="front">Front</Label>
-                    <Input
-                      id="front"
-                      placeholder="e.g. El perro"
-                      value={newCardFront}
-                      onChange={(e) => setNewCardFront(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="back">Back</Label>
-                    <Input
-                      id="back"
-                      placeholder="e.g. The dog"
-                      value={newCardBack}
-                      onChange={(e) => setNewCardBack(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={!newCardFront.trim() || !newCardBack.trim()}
-                    isPending={addCardMutation.isPending}
-                  >
-                    Add Card
-                  </Button>
-                </DialogFooter>
-              </form>
+              {deckToAddCard && (
+                <HomeAddCardForm
+                  deck={deckToAddCard}
+                  onDone={() => setDeckToAddCard(null)}
+                />
+              )}
             </DialogContent>
           </Dialog>
 
           <Dialog
             open={deckToDelete !== null}
             onOpenChange={(open) => {
-              if (!open) {
-                setDeckToDelete(null);
-                setDeleteConfirmation("");
-              }
+              if (!open) setDeckToDelete(null);
             }}
           >
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Deck</DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  deck "{deckToDelete?.name}" and all its cards.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Please type{" "}
-                    <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-mono font-medium">
-                      I want to delete this deck
-                    </span>{" "}
-                    to confirm.
-                  </p>
-                  <Input
-                    id="confirm"
-                    value={deleteConfirmation}
-                    onChange={(e) => setDeleteConfirmation(e.target.value)}
-                    placeholder="I want to delete this deck"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setDeckToDelete(null);
-                    setDeleteConfirmation("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteDeck}
-                  disabled={deleteConfirmation !== "I want to delete this deck"}
-                  isPending={deleteDeckMutation.isPending}
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
+              {deckToDelete && (
+                <DeleteDeckForm
+                  deck={deckToDelete}
+                  onDone={() => setDeckToDelete(null)}
+                />
+              )}
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isCreateDeckOpen} onOpenChange={setIsCreateDeckOpen}>
             <DialogTrigger
               render={
                 <Button
@@ -485,44 +254,14 @@ export default function Home() {
               {showPlaceholder ? "\u00a0" : "Create Deck"}
             </DialogTrigger>
             <DialogContent>
-              <form onSubmit={handleCreateDeck}>
-                <DialogHeader>
-                  <DialogTitle>Create a new deck</DialogTitle>
-                  <DialogDescription>
-                    Organize your cards into decks by topic or subject.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="e.g. Spanish Vocabulary"
-                      value={newDeckName}
-                      onChange={(e) => setNewDeckName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description (optional)</Label>
-                    <Input
-                      id="description"
-                      placeholder="e.g. Words from chapter 1-5"
-                      value={newDeckDesc}
-                      onChange={(e) => setNewDeckDesc(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={!newDeckName.trim()}
-                    isPending={createDeckMutation.isPending}
-                  >
-                    Create Deck
-                  </Button>
-                </DialogFooter>
-              </form>
+              {isCreateDeckOpen && (
+                <CreateDeckForm
+                  onSuccess={(id) => {
+                    setIsCreateDeckOpen(false);
+                    router.push(`/deck/${id}`);
+                  }}
+                />
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -531,25 +270,426 @@ export default function Home() {
           decks={decks}
           getDeckStats={getDeckStats}
           nowTime={nowTime}
-          onCreateDeck={() => setIsDialogOpen(true)}
+          onCreateDeck={() => setIsCreateDeckOpen(true)}
           onAddCard={(deck) => setDeckToAddCard(deck)}
-          onEdit={(deck) => {
-            setDeckToRename(deck);
-            setRenameDeckName(deck.name);
-            setRenameDeckDesc(deck.description ?? "");
-            setRenameNewCardsPerDay(
-              deck.new_cards_per_day ?? DEFAULT_NEW_CARDS_PER_DAY,
-            );
-            setRenameMaxReviewsPerDay(
-              deck.max_reviews_per_day ?? DEFAULT_MAX_REVIEWS_PER_DAY,
-            );
-          }}
+          onEdit={(deck) => setDeckToRename(deck)}
           onDelete={(deck) => setDeckToDelete(deck)}
         />
         <div className="w-full h-px rounded-full bg-border" />
         <TodayStatsFooter showPlaceholder={showPlaceholder} />
       </main>
     </div>
+  );
+}
+
+function CreateDeckForm({ onSuccess }: { onSuccess: (id: string) => void }) {
+  const mutation = useCreateDeck();
+  const form = useForm({
+    defaultValues: { name: "", description: "" },
+    validators: {
+      onMount: createDeckSchema,
+      onChange: createDeckSchema,
+      onSubmit: createDeckSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const id = await mutation.mutateAsync({
+        name: value.name,
+        description: value.description,
+      });
+      onSuccess(id);
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Create a new deck</DialogTitle>
+        <DialogDescription>
+          Organize your cards into decks by topic or subject.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <form.Field name="name">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Name</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                placeholder="e.g. Spanish Vocabulary"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="description">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Description (optional)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                placeholder="e.g. Words from chapter 1-5"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <DialogFooter>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              isPending={isSubmitting}
+            >
+              Create Deck
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function DeckSettingsForm({
+  deck,
+  onDone,
+}: {
+  deck: TDeck;
+  onDone: () => void;
+}) {
+  const mutation = useUpdateDeck();
+  const form = useForm({
+    defaultValues: {
+      name: deck.name,
+      description: deck.description ?? "",
+      new_cards_per_day: deck.new_cards_per_day ?? DEFAULT_NEW_CARDS_PER_DAY,
+      max_reviews_per_day:
+        deck.max_reviews_per_day ?? DEFAULT_MAX_REVIEWS_PER_DAY,
+    },
+    validators: {
+      onMount: deckSettingsSchema,
+      onChange: deckSettingsSchema,
+      onSubmit: deckSettingsSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync({
+        id: deck.id,
+        name: value.name,
+        description: value.description,
+        new_cards_per_day: value.new_cards_per_day,
+        max_reviews_per_day: value.max_reviews_per_day,
+      });
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Settings</DialogTitle>
+        <DialogDescription>
+          Update the name, description, or daily limits for this deck.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <form.Field name="name">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Name</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                placeholder="Deck Name"
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="description">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Description (optional)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                placeholder="e.g. Words from chapter 1-5"
+              />
+            </div>
+          )}
+        </form.Field>
+        <div className="border-t pt-4 space-y-4">
+          <p className="text-sm font-medium">Daily Limits</p>
+          <form.Field name="new_cards_per_day">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>New cards/day</Label>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  min={0}
+                  value={field.state.value}
+                  onChange={(e) =>
+                    field.handleChange(
+                      Math.max(0, parseInt(e.target.value) || 0),
+                    )
+                  }
+                  onBlur={field.handleBlur}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The maximum number of new cards to introduce in a day.
+                </p>
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="max_reviews_per_day">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Maximum reviews/day</Label>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  min={0}
+                  value={field.state.value}
+                  onChange={(e) =>
+                    field.handleChange(
+                      Math.max(0, parseInt(e.target.value) || 0),
+                    )
+                  }
+                  onBlur={field.handleBlur}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The maximum number of review cards to show in a day.
+                </p>
+              </div>
+            )}
+          </form.Field>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+            isDirty: s.isDirty,
+          })}
+        >
+          {({ canSubmit, isSubmitting, isDirty }) => (
+            <Button
+              type="submit"
+              disabled={!canSubmit || !isDirty}
+              isPending={isSubmitting}
+            >
+              Save
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function HomeAddCardForm({
+  deck,
+  onDone,
+}: {
+  deck: TDeck;
+  onDone: () => void;
+}) {
+  const mutation = useCreateCard();
+  const form = useForm({
+    defaultValues: { front: "", back: "" },
+    validators: {
+      onMount: addCardSchema,
+      onChange: addCardSchema,
+      onSubmit: addCardSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync({
+        deckId: deck.id,
+        front: value.front,
+        back: value.back,
+      });
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Add card to {deck.name}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <form.Field name="front">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Front</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                placeholder="e.g. El perro"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="back">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Back</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                placeholder="e.g. The dog"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <DialogFooter>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              isPending={isSubmitting}
+            >
+              Add Card
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function DeleteDeckForm({
+  deck,
+  onDone,
+}: {
+  deck: TDeck;
+  onDone: () => void;
+}) {
+  const mutation = useDeleteDeck();
+  const form = useForm({
+    defaultValues: { confirmation: "" },
+    validators: {
+      onMount: deleteDeckSchema,
+      onChange: deleteDeckSchema,
+      onSubmit: deleteDeckSchema,
+    },
+    onSubmit: async () => {
+      await mutation.mutateAsync({ id: deck.id });
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Delete Deck</DialogTitle>
+        <DialogDescription>
+          This action cannot be undone. This will permanently delete the deck
+          &quot;{deck.name}&quot; and all its cards.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground mb-2">
+            Please type{" "}
+            <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-mono font-medium">
+              {DELETE_DECK_CONFIRMATION}
+            </span>{" "}
+            to confirm.
+          </p>
+          <form.Field name="confirmation">
+            {(field) => (
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                placeholder={DELETE_DECK_CONFIRMATION}
+              />
+            )}
+          </form.Field>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={!canSubmit}
+              isPending={isSubmitting}
+            >
+              Delete
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
   );
 }
 

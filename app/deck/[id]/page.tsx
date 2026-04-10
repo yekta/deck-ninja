@@ -24,23 +24,26 @@ import {
 } from "@/hooks/data/use-cards";
 import { useDeck } from "@/hooks/data/use-decks";
 import { cn } from "@/lib/utils";
+import { useForm } from "@tanstack/react-form";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { z } from "zod";
+
+const cardSchema = z.object({
+  front: z.string().trim().min(1, "Front is required"),
+  back: z.string().trim().min(1, "Back is required"),
+});
 
 export default function DeckPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { user, loading } = useAuth();
 
-  const [newFront, setNewFront] = useState("");
-  const [newBack, setNewBack] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
   const [cardToEdit, setCardToEdit] = useState<TCard | null>(null);
-  const [editFront, setEditFront] = useState("");
-  const [editBack, setEditBack] = useState("");
 
   const { data: deckData, isPending: isPendingDecks } = useDeck(id);
   const { data: cards = [], isPending: isPendingCards } = useCardsByDeck(id);
@@ -56,49 +59,13 @@ export default function DeckPage() {
 
   const isPending = isPendingDecks || isPendingCards;
 
-  const addCardMutation = useCreateCard();
   const deleteCardMutation = useDeleteCard();
-  const editCardMutation = useUpdateCard();
-
-  const handleAddCard = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCardMutation.mutate(
-      { deckId: id, front: newFront, back: newBack },
-      {
-        onSuccess: () => {
-          setNewFront("");
-          setNewBack("");
-          setIsDialogOpen(false);
-        },
-      },
-    );
-  };
 
   const handleDeleteCard = () => {
     if (!cardToDelete) return;
     deleteCardMutation.mutate(
       { id: cardToDelete, deckId: id },
       { onSuccess: () => setCardToDelete(null) },
-    );
-  };
-
-  const handleEditCard = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cardToEdit) return;
-    editCardMutation.mutate(
-      {
-        id: cardToEdit.id,
-        deckId: id,
-        front: editFront,
-        back: editBack,
-      },
-      {
-        onSuccess: () => {
-          setCardToEdit(null);
-          setEditFront("");
-          setEditBack("");
-        },
-      },
     );
   };
 
@@ -187,51 +154,17 @@ export default function DeckPage() {
             onOpenChange={(open) => !open && setCardToEdit(null)}
           >
             <DialogContent>
-              <form onSubmit={handleEditCard}>
-                <DialogHeader>
-                  <DialogTitle>Edit Card</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-front">Front (Question)</Label>
-                    <Input
-                      id="edit-front"
-                      value={editFront}
-                      onChange={(e) => setEditFront(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-back">Back (Answer)</Label>
-                    <Input
-                      id="edit-back"
-                      value={editBack}
-                      onChange={(e) => setEditBack(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCardToEdit(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={!editFront.trim() || !editBack.trim()}
-                    isPending={editCardMutation.isPending}
-                  >
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </form>
+              {cardToEdit && (
+                <EditCardForm
+                  card={cardToEdit}
+                  deckId={id}
+                  onDone={() => setCardToEdit(null)}
+                />
+              )}
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isAddCardOpen} onOpenChange={setIsAddCardOpen}>
             <DialogTrigger
               render={
                 <Button
@@ -247,40 +180,12 @@ export default function DeckPage() {
               {showPlaceholder ? "\u00a0" : "Add Card"}
             </DialogTrigger>
             <DialogContent>
-              <form onSubmit={handleAddCard}>
-                <DialogHeader>
-                  <DialogTitle>Add a new card</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="front">Front (Question)</Label>
-                    <Input
-                      id="front"
-                      value={newFront}
-                      onChange={(e) => setNewFront(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="back">Back (Answer)</Label>
-                    <Input
-                      id="back"
-                      value={newBack}
-                      onChange={(e) => setNewBack(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={!newFront.trim() || !newBack.trim()}
-                    isPending={addCardMutation.isPending}
-                  >
-                    Add Card
-                  </Button>
-                </DialogFooter>
-              </form>
+              {isAddCardOpen && (
+                <AddCardForm
+                  deckId={id}
+                  onDone={() => setIsAddCardOpen(false)}
+                />
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -299,7 +204,7 @@ export default function DeckPage() {
             <p className="text-muted-foreground mb-6">
               Add your first card to this deck.
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button onClick={() => setIsAddCardOpen(true)}>
               <Plus className="h-4 w-4" />
               Add Card
             </Button>
@@ -312,11 +217,7 @@ export default function DeckPage() {
                 id={card.id}
                 front={card.front}
                 back={card.back}
-                onEdit={() => {
-                  setCardToEdit(card);
-                  setEditFront(card.front);
-                  setEditBack(card.back);
-                }}
+                onEdit={() => setCardToEdit(card)}
                 onDelete={() => setCardToDelete(card.id)}
               />
             ))}
@@ -324,5 +225,186 @@ export default function DeckPage() {
         )}
       </main>
     </div>
+  );
+}
+
+function AddCardForm({
+  deckId,
+  onDone,
+}: {
+  deckId: string;
+  onDone: () => void;
+}) {
+  const mutation = useCreateCard();
+  const form = useForm({
+    defaultValues: { front: "", back: "" },
+    validators: {
+      onMount: cardSchema,
+      onChange: cardSchema,
+      onSubmit: cardSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync({
+        deckId,
+        front: value.front,
+        back: value.back,
+      });
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Add a new card</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <form.Field name="front">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Front (Question)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="back">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Back (Answer)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <DialogFooter>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              isPending={isSubmitting}
+            >
+              Add Card
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function EditCardForm({
+  card,
+  deckId,
+  onDone,
+}: {
+  card: TCard;
+  deckId: string;
+  onDone: () => void;
+}) {
+  const mutation = useUpdateCard();
+  const form = useForm({
+    defaultValues: { front: card.front, back: card.back },
+    validators: {
+      onMount: cardSchema,
+      onChange: cardSchema,
+      onSubmit: cardSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync({
+        id: card.id,
+        deckId,
+        front: value.front,
+        back: value.back,
+      });
+      onDone();
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>Edit Card</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <form.Field name="front">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Front (Question)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="back">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Back (Answer)</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
+        <form.Subscribe
+          selector={(s) => ({
+            canSubmit: s.canSubmit,
+            isSubmitting: s.isSubmitting,
+            isDirty: s.isDirty,
+          })}
+        >
+          {({ canSubmit, isSubmitting, isDirty }) => (
+            <Button
+              type="submit"
+              disabled={!canSubmit || !isDirty}
+              isPending={isSubmitting}
+            >
+              Save Changes
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
   );
 }
