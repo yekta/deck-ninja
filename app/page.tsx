@@ -48,6 +48,7 @@ import { z } from "zod";
 import { Navbar } from "@/components/navbar";
 import SignInForm from "@/components/sign-in-form";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { useAsyncRouterPush } from "@/hooks/use-async-router-push";
 
 const DELETE_DECK_CONFIRMATION = "I want to delete this deck";
 
@@ -73,7 +74,7 @@ const deleteDeckSchema = z.object({
 });
 
 export default function Home() {
-  const router = useRouter();
+  const [asyncRouterPush] = useAsyncRouterPush();
   const { user, loading } = useAuth();
   const nowTime = useNow();
 
@@ -219,8 +220,8 @@ export default function Home() {
             <DialogContent>
               {isCreateDeckOpen && (
                 <CreateDeckForm
-                  onAfterSubmit={(id) => {
-                    router.push(`/deck/${id}`);
+                  onAfterSubmit={async (id) => {
+                    await asyncRouterPush(`/deck/${id}`);
                     setIsCreateDeckOpen(false);
                   }}
                 />
@@ -247,7 +248,7 @@ export default function Home() {
 function CreateDeckForm({
   onAfterSubmit,
 }: {
-  onAfterSubmit: (id: string) => void;
+  onAfterSubmit: (id: string) => Promise<void>;
 }) {
   const { data: profiles, isPending: isPendingProfiles } =
     useLearningProfiles();
@@ -270,7 +271,7 @@ function CreateDeckForm({
         description: value.description,
         learning_profile_id: value.learning_profile_id,
       });
-      onAfterSubmit(id);
+      await onAfterSubmit(id);
     },
   });
 
