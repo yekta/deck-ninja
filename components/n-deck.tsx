@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { MoreVertical, Settings, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "motion/react";
+import Dots from "@/components/dots";
 
 type TNDeckProps =
   | { isPlaceholder: true }
@@ -125,7 +126,8 @@ export function NDeck(props: TNDeckProps) {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col w-full gap-2">
+          <CardFooter className="flex flex-col w-full gap-2 relative">
+            <Dots />
             {isPlaceholder ? (
               <Button
                 variant="default"

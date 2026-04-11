@@ -149,7 +149,7 @@ export default function Home() {
   const showPlaceholder = loading || isPending;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-5 pt-5 pb-16 space-y-8">
