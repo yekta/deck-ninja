@@ -27,7 +27,8 @@ import { cn } from "@/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 

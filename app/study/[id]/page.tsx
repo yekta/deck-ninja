@@ -20,7 +20,8 @@ import {
 import confetti from "canvas-confetti";
 import { BrushCleaningIcon, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useMemo, useState } from "react";
 
 type TQueueItem = {

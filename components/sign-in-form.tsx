@@ -5,8 +5,8 @@ import Logo from "@/components/icons/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LoaderIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "nextjs-toploader/app";
 
 type TProps = {
   className?: string;

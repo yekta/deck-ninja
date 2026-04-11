@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCards, useCreateCard } from "@/hooks/data/use-cards";
+import { useCards } from "@/hooks/data/use-cards";
 import {
   useCreateDeck,
   useDecks,
@@ -41,7 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
