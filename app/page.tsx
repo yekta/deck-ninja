@@ -675,7 +675,7 @@ function TodayStatsFooter({ showPlaceholder }: { showPlaceholder: boolean }) {
       data-placeholder={showPlaceholder ? "true" : undefined}
       className="w-full flex justify-center group"
     >
-      <p className="text-center max-w-2xl text-muted-foreground group-data-placeholder:bg-skeleton group-data-placeholder:text-transparent group-data-placeholder:animate-skeleton group-data-placeholder:rounded">
+      <p className="text-center text-sm max-w-2xl text-muted-foreground group-data-placeholder:bg-skeleton group-data-placeholder:text-transparent group-data-placeholder:animate-skeleton group-data-placeholder:rounded">
         {statsText}
       </p>
     </div>
