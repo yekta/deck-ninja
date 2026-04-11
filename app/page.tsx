@@ -48,7 +48,6 @@ import { z } from "zod";
 import { Navbar } from "@/components/navbar";
 import SignInForm from "@/components/sign-in-form";
 import { formatDuration, intervalToDuration } from "date-fns";
-import { learningProfiles } from "@/lib/db/schema";
 
 const DELETE_DECK_CONFIRMATION = "I want to delete this deck";
 
@@ -64,11 +63,6 @@ const deckSettingsSchema = z.object({
   learning_profile_id: z.uuid(),
 });
 
-const addCardSchema = z.object({
-  front: z.string().trim().min(1, "Front is required"),
-  back: z.string().trim().min(1, "Back is required"),
-});
-
 const deleteDeckSchema = z.object({
   confirmation: z
     .string()
@@ -80,14 +74,12 @@ const deleteDeckSchema = z.object({
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading } = useAuth();
   const nowTime = useNow();
 
   const [isCreateDeckOpen, setIsCreateDeckOpen] = useState(false);
   const [deckToDelete, setDeckToDelete] = useState<TDeck | null>(null);
   const [deckToRename, setDeckToRename] = useState<TDeck | null>(null);
-  const [deckToAddCard, setDeckToAddCard] = useState<TDeck | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const { data: decks = [], isPending: isPendingDecks } = useDecks();
   const { data: cards = [], isPending: isPendingCards } = useCards();
@@ -149,15 +141,6 @@ export default function Home() {
     };
   };
 
-  const handleSignIn = async () => {
-    setIsSigningIn(true);
-    try {
-      await signInWithGoogle();
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
   if (!loading && !user) {
     return <SignInForm />;
   }
@@ -200,23 +183,6 @@ export default function Home() {
               )}
             </DialogContent>
           </Dialog>
-
-          <Dialog
-            open={deckToAddCard !== null}
-            onOpenChange={(open) => {
-              if (!open) setDeckToAddCard(null);
-            }}
-          >
-            <DialogContent>
-              {deckToAddCard && (
-                <HomeAddCardForm
-                  deck={deckToAddCard}
-                  onDone={() => setDeckToAddCard(null)}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
-
           <Dialog
             open={deckToDelete !== null}
             onOpenChange={(open) => {
@@ -253,9 +219,9 @@ export default function Home() {
             <DialogContent>
               {isCreateDeckOpen && (
                 <CreateDeckForm
-                  onSuccess={(id) => {
-                    setIsCreateDeckOpen(false);
+                  onAfterSubmit={(id) => {
                     router.push(`/deck/${id}`);
+                    setIsCreateDeckOpen(false);
                   }}
                 />
               )}
@@ -268,7 +234,6 @@ export default function Home() {
           getDeckStats={getDeckStats}
           nowTime={nowTime}
           onCreateDeck={() => setIsCreateDeckOpen(true)}
-          onAddCard={(deck) => setDeckToAddCard(deck)}
           onEdit={(deck) => setDeckToRename(deck)}
           onDelete={(deck) => setDeckToDelete(deck)}
         />
@@ -279,7 +244,11 @@ export default function Home() {
   );
 }
 
-function CreateDeckForm({ onSuccess }: { onSuccess: (id: string) => void }) {
+function CreateDeckForm({
+  onAfterSubmit,
+}: {
+  onAfterSubmit: (id: string) => void;
+}) {
   const { data: profiles, isPending: isPendingProfiles } =
     useLearningProfiles();
   const defaultProfile = profiles?.find((p) => p.is_default);
@@ -301,7 +270,7 @@ function CreateDeckForm({ onSuccess }: { onSuccess: (id: string) => void }) {
         description: value.description,
         learning_profile_id: value.learning_profile_id,
       });
-      onSuccess(id);
+      onAfterSubmit(id);
     },
   });
 
@@ -600,95 +569,6 @@ function DeckSettingsForm({
   );
 }
 
-function HomeAddCardForm({
-  deck,
-  onDone,
-}: {
-  deck: TDeck;
-  onDone: () => void;
-}) {
-  const mutation = useCreateCard();
-  const form = useForm({
-    defaultValues: { front: "", back: "" },
-    validators: {
-      onMount: addCardSchema,
-      onChange: addCardSchema,
-      onSubmit: addCardSchema,
-    },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync({
-        deckId: deck.id,
-        front: value.front,
-        back: value.back,
-      });
-      onDone();
-    },
-  });
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <DialogHeader>
-        <DialogTitle>Add card to {deck.name}</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4 py-4">
-        <form.Field name="front">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name}>Front</Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                placeholder="e.g. El perro"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-              />
-            </div>
-          )}
-        </form.Field>
-        <form.Field name="back">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name}>Back</Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                placeholder="e.g. The dog"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-              />
-            </div>
-          )}
-        </form.Field>
-      </div>
-      <DialogFooter>
-        <form.Subscribe
-          selector={(s) => ({
-            canSubmit: s.canSubmit,
-            isSubmitting: s.isSubmitting,
-          })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button
-              type="submit"
-              disabled={!canSubmit}
-              isPending={isSubmitting}
-            >
-              Add Card
-            </Button>
-          )}
-        </form.Subscribe>
-      </DialogFooter>
-    </form>
-  );
-}
-
 function DeleteDeckForm({ deck, onDone }: { deck: TDeck; onDone: () => void }) {
   const mutation = useDeleteDeck();
   const form = useForm({
@@ -830,7 +710,6 @@ function DecksSection({
   getDeckStats,
   nowTime,
   onCreateDeck,
-  onAddCard,
   onEdit,
   onDelete,
 }: {
@@ -839,7 +718,6 @@ function DecksSection({
   getDeckStats: (deckId: string) => TDeckStats;
   nowTime: number;
   onCreateDeck: () => void;
-  onAddCard: (deck: TDeck) => void;
   onEdit: (deck: TDeck) => void;
   onDelete: (deck: TDeck) => void;
 }) {
@@ -890,7 +768,6 @@ function DecksSection({
             isRecentlyUpdated={isRecentlyUpdated}
             studyHref={`/study/${deck.id}`}
             manageHref={`/deck/${deck.id}`}
-            onAddCard={() => onAddCard(deck)}
             onEdit={() => onEdit(deck)}
             onDelete={() => onDelete(deck)}
           />

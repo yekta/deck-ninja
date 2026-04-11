@@ -34,7 +34,6 @@ type TNDeckProps =
       isRecentlyUpdated: boolean;
       studyHref: string;
       manageHref: string;
-      onAddCard: () => void;
       onEdit: () => void;
       onDelete: () => void;
     };
@@ -142,13 +141,6 @@ export function NDeck(props: TNDeckProps) {
               </Link>
             )}
             <div className="flex w-full gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 group-data-placeholder:text-transparent group-data-placeholder:bg-skeleton group-data-placeholder:animate-pulse group-data-placeholder:border-transparent group-data-placeholder:pointer-events-none group-data-placeholder:hover:bg-skeleton"
-                onClick={isPlaceholder ? undefined : props.onAddCard}
-              >
-                Add Card
-              </Button>
               {isPlaceholder ? (
                 <Button
                   variant="outline"
