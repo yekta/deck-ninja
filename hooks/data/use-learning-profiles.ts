@@ -1,12 +1,11 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { TLearningProfile } from "@/lib/db/schema";
 import { handleDbError, OperationType } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const supabase = createClient();
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const learningProfilesKey = (userId: string | undefined) =>
   ["learningProfiles", userId] as const;
@@ -24,7 +23,7 @@ export function useLearningProfiles() {
         .order("name", { ascending: true });
       if (error)
         await handleDbError(error, OperationType.GET, "learning_profiles");
-      return (data ?? []) as TLearningProfile[];
+      return data || [];
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,

@@ -1,4 +1,8 @@
-import { TLearningProfile } from "@/lib/db/schema";
+import {
+  TCardStateEnum,
+  TLearningProfile,
+  TLearningProfileLoose,
+} from "@/lib/db/schema";
 import {
   fsrs,
   createEmptyCard,
@@ -54,7 +58,7 @@ export const FSRS_DEFAULT_W = Object.freeze([
   FSRS_DEFAULT_DECAY,
 ]);
 
-export function createUserScheduler(params: TLearningProfile): FSRS {
+export function createUserScheduler(params: TLearningProfileLoose): FSRS {
   const fsrsParams: FSRSParameters = {
     request_retention: params.request_retention,
     maximum_interval: params.maximum_interval,
@@ -75,7 +79,7 @@ export function reviewLogToDbRow(
   return {
     card_id: cardId,
     rating: log.rating as number,
-    state: stateToEnum[log.state] ?? "new",
+    state: stateToEnum[log.state] ?? stateToEnum[State.New],
     due: new Date(log.due).toISOString(),
     stability: log.stability,
     difficulty: log.difficulty,
@@ -86,14 +90,14 @@ export function reviewLogToDbRow(
   };
 }
 
-const stateToEnum: Record<State, string> = {
+const stateToEnum: Record<State, TCardStateEnum> = {
   [State.New]: "new",
   [State.Learning]: "learning",
   [State.Review]: "review",
   [State.Relearning]: "relearning",
 };
 
-const enumToState: Record<string, State> = {
+const enumToState: Record<TCardStateEnum, State> = {
   new: State.New,
   learning: State.Learning,
   review: State.Review,
@@ -108,7 +112,7 @@ export function dbRowToFSRSCard(row: {
   scheduled_days: number;
   reps: number;
   lapses: number;
-  state: string;
+  state: TCardStateEnum;
   learning_steps: number;
   last_review: string | null;
 }): FSRSCard {

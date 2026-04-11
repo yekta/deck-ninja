@@ -6,7 +6,11 @@ import {
   DEFAULT_NEW_CARDS_PER_DAY,
 } from "@/lib/constants";
 import { handleDbError, OperationType } from "@/lib/db-error";
-import { TLearningProfile } from "@/lib/db/schema";
+import {
+  TCardStateEnum,
+  TLearningProfile,
+  TLearningProfileLoose,
+} from "@/lib/db/schema";
 import { SHORT_INTERVAL_MS } from "@/lib/fsrs";
 import { createClient } from "@/lib/supabase/client";
 
@@ -24,7 +28,7 @@ export type TStudyCard = {
   scheduled_days: number;
   reps: number;
   lapses: number;
-  state: string;
+  state: TCardStateEnum;
   learning_steps: number;
   last_review: string | null;
 };
@@ -37,7 +41,7 @@ export const studyCardsKey = (
 
 export function useStudyCards(
   deckId: string | undefined,
-  learningProfile: TLearningProfile | null | undefined,
+  learningProfile: TLearningProfileLoose | null | undefined,
 ) {
   const { user } = useAuth();
   return useQuery({

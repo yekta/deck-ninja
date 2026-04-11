@@ -1,16 +1,4 @@
 import {
-  pgTable,
-  pgEnum,
-  text,
-  uuid,
-  timestamp,
-  real,
-  integer,
-  boolean,
-  index,
-  pgSchema,
-} from "drizzle-orm/pg-core";
-import {
   DEFAULT_MAX_REVIEWS_PER_DAY,
   DEFAULT_NEW_CARDS_PER_DAY,
 } from "@/lib/constants";
@@ -23,13 +11,21 @@ import {
   FSRS_DEFAULT_REQUEST_RETENTION,
   FSRS_DEFAULT_W,
 } from "@/lib/fsrs";
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgSchema,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
-export const cardStateEnum = pgEnum("card_state", [
-  "new",
-  "learning",
-  "review",
-  "relearning",
-]);
+const cardStateEnumConst = ["new", "learning", "review", "relearning"] as const;
+export const cardStateEnum = pgEnum("card_state", cardStateEnumConst);
 
 const authSchema = pgSchema("auth");
 const authUsers = authSchema.table("users", {
@@ -94,7 +90,7 @@ export const learningProfiles = pgTable(
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    updated_at: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
@@ -191,3 +187,14 @@ export type TDeck = typeof decks.$inferSelect;
 export type TCard = typeof cards.$inferSelect;
 export type TLearningProfile = typeof learningProfiles.$inferSelect;
 export type TReviewLog = typeof reviewLogs.$inferSelect;
+
+export type TLearningProfileLoose = Omit<
+  TLearningProfile,
+  "created_at" | "updated_at" | "last_calibrated_at"
+> & {
+  created_at: string;
+  updated_at: string;
+  last_calibrated_at: string;
+};
+
+export type TCardStateEnum = (typeof cardStateEnumConst)[number];

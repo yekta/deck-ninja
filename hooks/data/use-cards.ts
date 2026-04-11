@@ -132,11 +132,7 @@ export function useUpdateCard() {
         })
         .eq("id", input.id);
       if (error)
-        await handleDbError(
-          error,
-          OperationType.UPDATE,
-          `cards/${input.id}`,
-        );
+        await handleDbError(error, OperationType.UPDATE, `cards/${input.id}`);
     },
     onSuccess: (_data, variables) => {
       invalidateCards(qc, user?.id, variables.deckId);
@@ -154,11 +150,7 @@ export function useDeleteCard() {
         .delete()
         .eq("id", input.id);
       if (error)
-        await handleDbError(
-          error,
-          OperationType.DELETE,
-          `cards/${input.id}`,
-        );
+        await handleDbError(error, OperationType.DELETE, `cards/${input.id}`);
     },
     onSuccess: (_data, variables) => {
       invalidateCards(qc, user?.id, variables.deckId);

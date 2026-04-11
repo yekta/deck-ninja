@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cardsByDeckKey, cardsKey } from "./use-cards";
 import { todayReviewLogsKey } from "./use-review-logs";
 import type { TStudyCard } from "./use-study-cards";
+import { TCardStateEnum } from "@/lib/db/schema";
 
 export type TRateCardVariables = {
   rating: Grade;
@@ -46,12 +47,14 @@ export function useRateCard(
       const now = new Date();
       const result = scheduler.next(fsrsCard, now, rating);
       const dbFields = fsrsCardToDbRow(result.card);
+      const { state, ...dbFieldsWithoutState } = dbFields;
 
       const [cardResult, logResult] = await Promise.all([
         supabase
           .from("cards")
           .update({
-            ...dbFields,
+            ...dbFieldsWithoutState,
+            state: dbFields.state as TCardStateEnum,
             updated_at: now.toISOString(),
           })
           .eq("id", currentCard.id),
