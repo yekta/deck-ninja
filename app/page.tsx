@@ -151,8 +151,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative">
       <Navbar />
-
-      <main className="max-w-5xl mx-auto px-5 pt-5 pb-16 space-y-8">
+      <main className="max-w-5xl mx-auto px-5 pt-4 pb-16 flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <h2
             className={cn(
@@ -199,7 +198,6 @@ export default function Home() {
               )}
             </DialogContent>
           </Dialog>
-
           <Dialog open={isCreateDeckOpen} onOpenChange={setIsCreateDeckOpen}>
             <DialogTrigger
               render={

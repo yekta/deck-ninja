@@ -1,9 +1,19 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
+import {
+  EmptyList,
+  EmptyListContent,
+  EmptyListDescription,
+  EmptyListFooter,
+  EmptyListHeader,
+  EmptyListIcon,
+  EmptyListTitle,
+} from "@/components/empty-list";
+import CardsIcon from "@/components/icons/cards";
 import { NCardStudy } from "@/components/n-card-study";
 import { Navbar } from "@/components/navbar";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { useDeck } from "@/hooks/data/use-decks";
 import { useLearningProfiles } from "@/hooks/data/use-learning-profiles";
 import { useRateCard } from "@/hooks/data/use-rate-card";
@@ -18,7 +28,7 @@ import {
   type Grade,
 } from "@/lib/fsrs";
 import confetti from "canvas-confetti";
-import { BrushCleaningIcon, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
@@ -196,51 +206,48 @@ export default function StudyPage() {
           )
         }
       />
-
-      <main className="flex-1 flex flex-col items-center justify-center p-5 max-w-4xl mx-auto w-full overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-4 pb-5 max-w-4xl mx-auto w-full overflow-hidden">
         {showPlaceholder ? (
           <NCardStudy isPlaceholder />
         ) : totalCards === 0 && !hasNoDueCards ? (
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-border text-foreground mb-4">
-              <BrushCleaningIcon className="w-10 h-10" />
-            </div>
-            <div className="max-w-full flex flex-col gap-2">
-              <h2 className="text-3xl font-bold text-foreground">
-                This deck is empty
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-                Add some cards to this deck to study it.
-              </p>
-            </div>
-            <div className="flex gap-4 justify-center">
-              <Link href={`/deck/${id}`}>
-                <Button>Add Cards</Button>
-              </Link>
-            </div>
-          </div>
+          <EmptyList>
+            <EmptyListHeader>
+              <EmptyListIcon>
+                <CardsIcon />
+              </EmptyListIcon>
+              <EmptyListContent>
+                <EmptyListTitle>This deck is empty</EmptyListTitle>
+                <EmptyListDescription>
+                  Add some cards to this deck to study it.
+                </EmptyListDescription>
+              </EmptyListContent>
+            </EmptyListHeader>
+            <EmptyListFooter>
+              <Button>
+                <Link href={`/deck/${id}`}>Add Cards</Link>
+              </Button>
+            </EmptyListFooter>
+          </EmptyList>
         ) : isFinished || hasNoDueCards ? (
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success-muted text-success mb-4">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <div className="max-w-full flex flex-col gap-2">
-              <h2 className="text-3xl font-bold text-foreground">
-                You're all caught up!
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-                You have reviewed all the due cards in this deck. Great job!
-              </p>
-            </div>
-            <div className="flex gap-4 justify-center">
-              <Link href="/">
-                <Button variant="outline">Back to Dashboard</Button>
-              </Link>
-              <Link href={`/deck/${id}`}>
-                <Button>Manage Deck</Button>
-              </Link>
-            </div>
-          </div>
+          <EmptyList>
+            <EmptyListHeader>
+              <EmptyListIcon className="bg-success-muted text-success">
+                <CheckCircle2 />
+              </EmptyListIcon>
+              <EmptyListContent>
+                <EmptyListTitle>You're all caught up!</EmptyListTitle>
+                <EmptyListDescription>
+                  You have reviewed all the due cards in this deck.
+                </EmptyListDescription>
+              </EmptyListContent>
+            </EmptyListHeader>
+            <EmptyListFooter>
+              <LinkButton href="/">Back to Dashboard</LinkButton>
+              <LinkButton variant="outline" href={`/deck/${id}`}>
+                Manage Deck
+              </LinkButton>
+            </EmptyListFooter>
+          </EmptyList>
         ) : (
           <NCardStudy
             key={`${currentCard.id}-${reviewedCount}`}

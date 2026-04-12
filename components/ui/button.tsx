@@ -3,11 +3,13 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { LoaderIcon } from "lucide-react";
+import Link from "next/link";
+import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "group/button max-w-full overflow-hidden overflow-ellipsis min-w-0 relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -85,9 +87,66 @@ function Button({
           )}
         />
       </div>
-      {children}
+      {typeof children === "string" ? (
+        <span className="shrink min-w-0 overflow-hidden overflow-ellipsis">
+          {children}
+        </span>
+      ) : (
+        children
+      )}
     </ButtonPrimitive>
   );
 }
 
-export { Button, buttonVariants };
+type TLinkButtonProps = ComponentProps<typeof Link> &
+  VariantProps<typeof buttonVariants> & {
+    isPending?: boolean;
+  };
+
+function LinkButton({
+  className,
+  variant = "default",
+  size = "default",
+  isPending,
+  children,
+  ...props
+}: TLinkButtonProps) {
+  const loaderColorClass = {
+    default: "text-primary-foreground",
+    outline: "text-foreground",
+    secondary: "text-secondary-foreground",
+    ghost: "text-foreground",
+    destructive: "text-destructive",
+    link: "text-primary",
+  }[variant || "default"];
+
+  return (
+    <Link
+      data-slot="button"
+      data-pending={isPending ? "true" : undefined}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        "data-pending:text-transparent data-pending:transition-none",
+      )}
+      {...props}
+    >
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-data-pending/button:opacity-100 pointer-events-none">
+        <LoaderIcon
+          className={cn(
+            "group-data-pending/button:animate-spin size-5",
+            loaderColorClass,
+          )}
+        />
+      </div>
+      {typeof children === "string" ? (
+        <span className="shrink min-w-0 overflow-hidden overflow-ellipsis">
+          {children}
+        </span>
+      ) : (
+        children
+      )}
+    </Link>
+  );
+}
+
+export { Button, LinkButton, buttonVariants };

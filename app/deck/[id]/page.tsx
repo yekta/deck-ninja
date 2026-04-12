@@ -1,6 +1,16 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
+import {
+  EmptyList,
+  EmptyListContent,
+  EmptyListDescription,
+  EmptyListFooter,
+  EmptyListHeader,
+  EmptyListIcon,
+  EmptyListTitle,
+} from "@/components/empty-list";
+import CardsIcon from "@/components/icons/cards";
 import { NCardManage } from "@/components/n-card-manage";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
@@ -77,8 +87,7 @@ export default function DeckPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-
-      <main className="max-w-5xl mx-auto p-5 pb-16 space-y-5">
+      <main className="max-w-5xl mx-auto px-5 pt-4 pb-16 space-y-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Link href="/" className="shrink-0 -ml-2">
@@ -198,18 +207,22 @@ export default function DeckPage() {
             ))}
           </div>
         ) : cards.length === 0 ? (
-          <div className="text-center py-20 bg-background rounded-lg border border-dashed">
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              No cards yet
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Add your first card to this deck.
-            </p>
-            <Button onClick={() => setIsAddCardOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add Card
-            </Button>
-          </div>
+          <EmptyList className="border border-dashed">
+            <EmptyListHeader>
+              <EmptyListIcon>
+                <CardsIcon />
+              </EmptyListIcon>
+              <EmptyListContent>
+                <EmptyListTitle>No cards yet</EmptyListTitle>
+                <EmptyListDescription>
+                  Add your first card to this deck.
+                </EmptyListDescription>
+              </EmptyListContent>
+            </EmptyListHeader>
+            <EmptyListFooter>
+              <Button onClick={() => setIsAddCardOpen(true)}>Add Card</Button>
+            </EmptyListFooter>
+          </EmptyList>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cards.map((card) => (
