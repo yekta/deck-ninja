@@ -241,6 +241,7 @@ function EditCardForm({
               <FormInput
                 id={field.name}
                 name={field.name}
+                autoCapitalize="none"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
