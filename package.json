@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "db:generate": "pnpm --filter @lexeme/db db:generate",
     "db:migrate": "pnpm --filter @lexeme/db db:migrate",
-    "db:studio": "pnpm --filter @lexeme/db db:studio"
+    "db:studio": "pnpm --filter @lexeme/db db:studio",
+    "db:sync": "pnpm --filter @lexeme/db db:sync"
   },
   "devDependencies": {
     "eslint": "^9",

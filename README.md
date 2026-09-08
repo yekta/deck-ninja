@@ -63,6 +63,7 @@ the session cookie is first-party, no CORS or cookie-domain setup to develop.
 pnpm typecheck   # every workspace
 pnpm test        # packages/shared
 pnpm build       # web → apps/web/dist, server → apps/server/dist
+pnpm db:sync     # copy one Postgres into another, see .env.example
 ```
 
 ## Two things that will bite you
